@@ -20,5 +20,9 @@ npm install -g ezshare
 ## Supported platforms
 Works with all operating systems that have a modern browser. iOS, Android, Mac, Windows, ++
 
+## TODO
+- Make it look better, esp on phones
+- Package to exe files that build automatically on Travis using [pkg](https://www.npmjs.com/package/pkg)/[nexe](https://www.npmjs.com/package/nexe)
+
 ## See also:
 - https://github.com/http-party/http-server
