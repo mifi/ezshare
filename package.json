@@ -1,0 +1,21 @@
+{
+  "name": "ezshare",
+  "version": "1.0.0",
+  "description": "Easily share files over LAN",
+  "main": "index.js",
+  "repository": "https://github.com/mifi/ezshare",
+  "author": "Mikael Finstad <finstaden@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=8"
+  },
+  "dependencies": {
+    "archiver": "^3.1.1",
+    "express": "^4.17.1",
+    "express-async-handler": "^1.1.4",
+    "formidable": "^1.2.1",
+    "fs-extra": "^8.1.0",
+    "morgan": "^1.9.1",
+    "p-map": "^3.0.0"
+  }
+}
