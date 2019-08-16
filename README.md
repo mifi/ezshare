@@ -4,6 +4,8 @@ A simple static file server that lets you easily share many big files like photo
 
 ## Install
 
+- Install [Node.js](https://nodejs.org) and open a terminal:
+
 ```
 npm install -g ezshare
 ```
@@ -11,7 +13,7 @@ npm install -g ezshare
 ## Usage
 
 - Open a terminal and run:
-- `cd /path/to/your/files`
+- `cd /path/to/your/shared/files`
 - `ezshare`
 - Find your local IP address (Use `ifconfig` or `ipconfig` or open your Network Settings)
 - Open this URL on the other computer or phone: http://YOUR.LOCAL.IP:8080/
