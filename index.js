@@ -74,9 +74,15 @@ app.post('/upload', asyncHandler(async (req, res) => {
   form.maxFields = maxFields;
 
   form.parse(req, function(err, fields, files) {
-    res.writeHead(200, { 'content-type': 'text/plain' });
-    res.write('received upload:\n\n');
-    res.end(util.inspect({fields: fields, files: files}));
+    if (err) {
+      console.error('Upload failed', err);
+      res.send('Upload failed');
+      return;
+    }
+
+    console.log(util.inspect({ fields: fields, files: files }));
+    res.writeHead(200, { 'content-type': 'text/html' });
+    res.end(`Upload finished! <a href="/">Back</a>`);
   });
 }));
 
