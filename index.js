@@ -50,7 +50,7 @@ app.get('/browse', asyncHandler(async (req, res) => {
     return `<div><a href="${href}">${e}</a>${explicitDl}</div>`;
   }, { concurrency: 10 })).join('');
 
-  res.writeHead(200, { 'content-type': 'text/html' });
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
   res.end(`
     <form action="/upload" enctype="multipart/form-data" method="post">
       <h2>Upload file(s)</h2>
