@@ -10,7 +10,8 @@ const morgan = require('morgan');
 const asyncHandler = require('express-async-handler');
 const archiver = require('archiver');
 const pMap = require('p-map');
-
+const os = require('os');
+const flatMap = require('lodash/flatMap');
 
 const port = 8080;
 const maxFileSize = 4000 * 1024 * 1024;
@@ -115,4 +116,9 @@ app.get('/download', asyncHandler(async (req, res) => {
   }
  }));
 
-app.listen(port, () => console.log(`Listening on port ${port}`));
+app.listen(port, () => {
+  const interfaces = os.networkInterfaces();
+  const urls = flatMap(Object.values(interfaces), (addresses) => addresses).filter(({ family }) => family === 'IPv4').map(({ address }) => `http://${address}:${port}/`);
+  if (urls.length === 0) return;
+  console.log(`Listening on:\n${urls.join('\n')}`);
+});
