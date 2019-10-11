@@ -15,8 +15,7 @@ npm install -g ezshare
 - Open a terminal and run:
 - `cd /path/to/your/shared/files`
 - `ezshare`
-- Find your local IP address (Use `ifconfig` or `ipconfig` or open your Network Settings)
-- Open this URL on the other computer or phone: http://YOUR.LOCAL.IP:8080/
+- Open the browser in the other end to the printed URL
 - Start to upload or download files!
 
 ## Supported platforms
