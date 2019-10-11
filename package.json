@@ -12,6 +12,9 @@
   "bin": {
     "ezshare": "index.js"
   },
+  "scripts": {
+    "test": "exit 0"
+  },
   "dependencies": {
     "archiver": "^3.1.1",
     "express": "^4.17.1",
