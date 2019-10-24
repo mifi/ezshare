@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "archiver": "^3.1.1",
+    "content-disposition": "^0.5.3",
     "express": "^4.17.1",
     "express-async-handler": "^1.1.4",
     "formidable": "^1.2.1",

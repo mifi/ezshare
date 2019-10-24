@@ -12,6 +12,7 @@ const archiver = require('archiver');
 const pMap = require('p-map');
 const os = require('os');
 const flatMap = require('lodash/flatMap');
+const contentDisposition = require('content-disposition');
 
 const port = 8080;
 const maxFileSize = 4000 * 1024 * 1024;
@@ -25,6 +26,10 @@ function getFilePath(relPath) {
 }
 async function isDirectory(filePath) {
   return (await fs.lstat(filePath)).isDirectory();
+}
+
+function getContentDisposition(basename) {
+  return contentDisposition(basename);
 }
 
 const app = express();
@@ -95,7 +100,7 @@ async function serveDirZip(filePath, res) {
 
   res.writeHead(200, {
     'Content-Type': 'application/zip',
-    'Content-disposition': `attachment; filename=${path.basename(filePath)}.zip`, // TODO escape
+    'Content-disposition': getContentDisposition(`${path.basename(filePath)}.zip`),
   });
   archive.pipe(res);
 
@@ -111,7 +116,7 @@ app.get('/download', asyncHandler(async (req, res) => {
   if (isDir) {
     await serveDirZip(filePath, res);
   } else {
-    res.set('Content-disposition', `attachment; filename=${path.basename(filePath)}`); // TODO escape
+    res.set('Content-disposition', getContentDisposition(path.basename(filePath)));
     fs.createReadStream(filePath).pipe(res);
   }
  }));
