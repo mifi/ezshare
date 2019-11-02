@@ -72,6 +72,7 @@ app.get('/browse', asyncHandler(async (req, res) => {
   `);
 }));
 
+// NOTE: Must support non latin characters
 app.post('/upload', asyncHandler(async (req, res) => {
   // parse a file upload
   var form = new formidable.IncomingForm();
@@ -100,6 +101,7 @@ async function serveDirZip(filePath, res) {
 
   res.writeHead(200, {
     'Content-Type': 'application/zip',
+    // NOTE: Must support non latin characters
     'Content-disposition': getContentDisposition(`${path.basename(filePath)}.zip`),
   });
   archive.pipe(res);
@@ -116,6 +118,7 @@ app.get('/download', asyncHandler(async (req, res) => {
   if (isDir) {
     await serveDirZip(filePath, res);
   } else {
+    // NOTE: Must support non latin characters
     res.set('Content-disposition', getContentDisposition(path.basename(filePath)));
     fs.createReadStream(filePath).pipe(res);
   }
