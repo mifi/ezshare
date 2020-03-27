@@ -33,8 +33,7 @@ jobs:
 
       - name: Release
         uses: softprops/action-gh-release@v1
-        if: github.ref == 'refs/heads/github-actions'
-#        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             ezshare-win.zip
