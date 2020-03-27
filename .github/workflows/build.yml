@@ -24,7 +24,7 @@ jobs:
       - name: Run pkg
         run: |
           pkg index.js
-          mv index-win ezshare.exe
+          mv index-win.exe ezshare.exe
           zip ezshare-win.zip ezshare.exe
           mv index-macos ezshare
           zip ezshare-macos.zip ezshare
