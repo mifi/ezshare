@@ -14,10 +14,12 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 12
+      
+      - name: Yarn
+        run: yarn
 
       - name: Install pkg
-        run: |
-          npm i -g pkg
+        run: npm i -g pkg
 
       - name: Run pkg
         run: |
