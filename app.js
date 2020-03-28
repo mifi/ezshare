@@ -16,14 +16,12 @@ const contentDisposition = require('content-disposition');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const qrcode = require('qrcode-terminal');
 
-const isPkg = !!process.pkg;
-
 const maxFields = 1000;
 const debug = false;
 
 const isDirectory = async (filePath) => (await fs.lstat(filePath)).isDirectory();
 
-module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel }) => {
+module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }) => {
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
   const sharedPath = sharedPathIn || process.cwd();
 
@@ -125,14 +123,15 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     console.log('Server listening on:');
     urls.forEach((url) => {
       console.log(url);
+      console.log('Scan this QR code on your phone:')
       console.log();
       qrcode.generate(url);
     });
   });
 
   // Serving the frontend depending on dev/production
-  if (isPkg) app.use('/', express.static(join(__dirname, 'ezshare-frontend/build')));
-  else app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
+  if (devMode) app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
+  else app.use('/', express.static(join(__dirname, 'ezshare-frontend/build')));
 
   // Default to index because SPA
   app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/build/index.html')));  

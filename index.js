@@ -27,6 +27,7 @@ const cli = meow(`
 const port = cli.flags.port ? parseInt(cli.flags.port) : undefined;
 const maxUploadSize = cli.flags.maxUploadSize ? parseInt(cli.flags.maxUploadSize) : undefined;
 const zipCompressionLevel = cli.flags.zipCompressionLevel ? parseInt(cli.flags.zipCompressionLevel) : undefined;
+const devMode = !!cli.flags.devMode;
 
 if (zipCompressionLevel != null) {
   assert(zipCompressionLevel <= 9 && zipCompressionLevel >= 0, 'zip-compression-level must be between 0 and 9');
@@ -37,4 +38,5 @@ app({
   port: port || 8080,
   maxUploadSize: maxUploadSize || 4000 * 1024 * 1024,
   zipCompressionLevel: zipCompressionLevel != null ? zipCompressionLevel : 0,
+  devMode,
 });
