@@ -14,10 +14,12 @@ const os = require('os');
 const flatMap = require('lodash/flatMap');
 const contentDisposition = require('content-disposition');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const qrcode = require('qrcode-terminal');
 
 const isPkg = !!process.pkg;
 
 const maxFields = 1000;
+const debug = false;
 
 const isDirectory = async (filePath) => (await fs.lstat(filePath)).isDirectory();
 
@@ -32,7 +34,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
   const app = express();
 
-  app.use(morgan('dev'));
+  if (debug) app.use(morgan('dev'));
 
   // NOTE: Must support non latin characters
   app.post('/api/upload', asyncHandler(async (req, res) => {
@@ -118,9 +120,14 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
   app.listen(port, () => {
     const interfaces = os.networkInterfaces();
-    const urls = flatMap(Object.values(interfaces), (addresses) => addresses).filter(({ family }) => family === 'IPv4').map(({ address }) => `http://${address}:${port}/`);
+    const urls = flatMap(Object.values(interfaces), (addresses) => addresses).filter(({ family, address }) => family === 'IPv4' && address !== '127.0.0.1').map(({ address }) => `http://${address}:${port}/`);
     if (urls.length === 0) return;
-    console.log(`Listening on:\n${urls.join('\n')}`);
+    console.log('Server listening on:');
+    urls.forEach((url) => {
+      console.log(url);
+      console.log();
+      qrcode.generate(url);
+    });
   });
 
   // Serving the frontend depending on dev/production

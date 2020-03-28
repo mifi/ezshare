@@ -28,7 +28,7 @@ If you don't want to install Node.js, you can download a zipped executable of `e
 - [Windows](https://github.com/mifi/ezshare/releases/latest/download/ezshare-win.zip)
 - [Linux](https://github.com/mifi/ezshare/releases/latest/download/ezshare-linux.zip)
 
-Then extract the executable and put it in a folder where you can run it from the command line.
+Then extract the executable and put it in a folder where you can run it from the command line. You may have to right click the icon and then press "Open" first (on Mac.)
 
 ## Usage
 
@@ -37,6 +37,7 @@ Then extract the executable and put it in a folder where you can run it from the
 - `ezshare`
 - Open the browser in the other end to the printed URL
 - Start to upload or download files to/from this folder!
+- **Note** that the two devices need to be on the same WiFi (or possibly personal hotspot)
 
 **Alternatively** you can pass it the path you want to share:
 ```
