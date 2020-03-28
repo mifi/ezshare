@@ -19,7 +19,8 @@
     "start": "concurrently -k \"cd ezshare-frontend && BROWSER=none PORT=3000 npm start\" \"node .\""
   },
   "files": [
-    "/ezshare-frontend/build"
+    "/ezshare-frontend/build",
+    "app.js"
   ],
   "pkg": {
     "assets": [

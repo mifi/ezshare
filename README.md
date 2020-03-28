@@ -6,6 +6,7 @@ A simple static file server that lets you easily share many big files like photo
 
 ## Features
 - Local transfers without going through internet
+- Send full quality photos and videos to others without needing a fast internet connection
 - Handles really big files and directories
 - Handles a LOT of files
 - Auto ZIP directories super fast
