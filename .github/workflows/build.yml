@@ -18,10 +18,11 @@ jobs:
       - name: Install pkg
         run: npm i -g pkg
 
-      - name: Yarn
-        run: |
-          yarn
-          cd ezshare-frontend && yarn
+      - name: Frotnend yarn
+        run: cd ezshare-frontend && yarn
+
+      - name: yarn
+        run: yarn
 
       - name: Build
         run: npm run build
