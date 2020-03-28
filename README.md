@@ -55,4 +55,5 @@ For more info run `ezshare --help`
 - Allow select multiple files to download as zip
 
 ## See also:
-- https://github.com/http-party/http-server
+- https://github.com/claudiodangelis/qr-filetransfer
+- https://github.com/shivensinha4/qr-fileshare
