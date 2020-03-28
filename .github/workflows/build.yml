@@ -14,21 +14,26 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 12
-      
-      - name: Yarn
-        run: yarn
 
       - name: Install pkg
         run: npm i -g pkg
 
+      - name: Yarn
+        run: |
+          yarn
+          cd ezshare-frontend && yarn
+
+      - name: Build
+        run: npm run build
+
       - name: Run pkg
         run: |
-          pkg index.js
-          mv index-win.exe ezshare.exe
+          pkg .
+          mv ezshare-win.exe ezshare.exe
           zip ezshare-win.zip ezshare.exe
-          mv index-macos ezshare
+          mv ezshare-macos ezshare
           zip ezshare-macos.zip ezshare
-          mv index-linux ezshare
+          mv ezshare-linux ezshare
           zip ezshare-linux.zip ezshare
 
       - name: Release
