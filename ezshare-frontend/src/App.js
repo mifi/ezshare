@@ -6,6 +6,9 @@ import { Switch, useLocation, Link } from 'react-router-dom';
 import { FaFileArchive, FaFileAlt, FaFolder, FaFileUpload, FaSpinner, FaShareAlt, FaRedoAlt } from 'react-icons/fa';
 import { useDropzone } from 'react-dropzone';
 import Swal from 'sweetalert2';
+import Clipboard from 'react-clipboard.js';
+import { motion, AnimatePresence } from 'framer-motion';
+
 import { CircularProgressbar } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 
@@ -113,6 +116,8 @@ const FileRow = ({ path, isDir, fileName }) => {
 
 const Browser = () => {
   const [currentDirFiles, setCurrentDirFiles] = useState({ files: [] });
+  const [clipboardText, setClipboardText] = useState();
+  const [saveAsFile, setSaveAsFile] = useState(false);
 
   const urlSearchParams = useQuery();
   const rootPath = '/'
@@ -145,6 +150,40 @@ const Browser = () => {
   const dirs = currentDirFiles.files.filter(f => f.isDir);
   const nonDirs = currentDirFiles.files.filter(f => !f.isDir);
 
+  async function onPaste(e) {
+    e.preventDefault();
+    e.target.blur();
+
+    try {
+      const clipboardData = e.clipboardData.getData('Text');
+      const data = new URLSearchParams();
+      data.append('clipboard', clipboardData);
+      data.append('saveAsFile', saveAsFile);
+      await axios.post('/api/paste', data);
+
+      Toast.fire({ icon: 'success', title: saveAsFile ? 'Pasted text has been saved to a file on other side' : 'Pasted text has been sent to the clipboard on other side' });
+    } catch (err) {
+      console.error(err);
+      Toast.fire({ icon: 'error', title: 'Paste clipboard failed' });
+    }
+  }
+
+  async function onGetClipboard() {
+    try {
+      const response = await axios.post('/api/copy');
+
+      setClipboardText(response.data);
+    } catch (err) {
+      console.error(err);
+      Toast.fire({ icon: 'error', title: 'Copy clipboard failed' });
+    }
+  }
+
+  function onClipboardCopySuccess() {
+    Toast.fire({ icon: 'success', title: 'Text has been copied from the other side\'s clipboard' });
+    setClipboardText();
+  }
+
   return (
     <>
       <div style={{ position: 'fixed', top: 0, right: 0, left: 0, textAlign: 'center', backgroundColor: '#f57b51', borderBottom: '2px solid rgba(0,0,0,0.2)', color: 'white', fontSize: 36, padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -155,6 +194,39 @@ const Browser = () => {
       </div>
 
       <div style={{ width: '100%', maxWidth: 600, margin: '100px auto 30px auto', boxSizing: 'border-box', padding: '10px 15px 15px 15px', background: 'white', boxShadow: 'rgba(0,0,0,0.03) 0 0 12px 10px', borderRadius: 5 }}>
+        <h2>Clipboard</h2>
+
+        <div style={{ margin: 'auto', maxWidth: 300, width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', marginBottom: 10 }}>
+            <input type="text" onPaste={onPaste} placeholder="Paste here to send clipboard" style={{ display: 'block', width: '100%', boxSizing: 'border-box', fontSize: 12, textAlign: 'center', padding: 5 }} />
+            <div style={{ whiteSpace: 'nowrap' }}><input id="saveAsFile" type="checkbox" onChange={(e) => setSaveAsFile(e.target.checked)} checked={saveAsFile} style={{ marginLeft: 10, verticalAlign: 'middle' }} /> <label htmlFor="saveAsFile" style={{ verticalAlign: 'middle' }}>Save as file</label></div>
+          </div>
+
+          <AnimatePresence>
+            {clipboardText ? (
+              <motion.div
+                key="div"
+                style={{ width: '100%', originY: 0 }}
+                initial={{ scaleY: 0, opacity: 0 }}
+                animate={{ scaleY: 1, opacity: 1 }}
+                exit={{ scaleY: 0, opacity: 0 }}
+              >
+                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', alignSelf: 'stretch', background: 'rgba(0,0,0,0.04)', borderRadius: 5, padding: 5, margin: 5, textAlign: 'center', boxSizing: 'border-box' }}>{clipboardText}</div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                  <Clipboard data-clipboard-text={clipboardText} onSuccess={onClipboardCopySuccess} style={{ padding: 5, flexGrow: 1 }}>
+                    Copy to clipboard
+                  </Clipboard>
+                  <button onClick={() => setClipboardText()} type="button" style={{ padding: 5, flexGrow: 1 }}>Cancel</button>
+                </div>
+              </motion.div>
+            ) : (
+              <button onClick={onGetClipboard} type="button" style={{ padding: 5, width: '100%', boxSizing: 'border-box' }}>Get clipboard from other side</button>
+            )}
+          </AnimatePresence>
+
+        </div>
+
         <h2>Upload files</h2>
         <Uploader onUploadSuccess={handleUploadSuccess} />
 

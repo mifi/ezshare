@@ -1,17 +1,17 @@
 # ezshare 🤝
 
-A simple static file server that lets you easily share many big files like photos and videos with friends over a local network without requiring an internet connection. It starts an HTTP server that lists all files and directories in the directory where it is started from. Then anyone can then connect to the server and download files or automatically generated ZIP of whole directories (kind of like Google Drive.) The client can also upload files to the server via their browser.
+A simple static file server that lets you easily share many big files like photos and videos with friends over a local network without requiring an internet connection. It starts an HTTP server that lists all files and directories in the directory where it is started from. Then anyone can then connect to the server and download files or automatically generated ZIP of whole directories (kind of like Google Drive.) The client can also upload files to the server via their browser. A QR code is generated for ease of use
 
 ![Demo](https://github.com/mifi/ezshare/raw/master/screenshot.png)
 
 ## Features
-- Local transfers without going through internet
+- Local two-way transfers without going through internet
 - Send full quality photos and videos to others without needing a fast internet connection
 - Handles really big files and directories
 - Handles a LOT of files
 - Auto ZIP directories super fast
-- The web client works on all major platforms, including iOS/Android.
-- Allows both uploading and downloading of files
+- Two-way sharing of clipboard
+- The web client works on all major platforms, including iOS and Android.
 
 ## Install (with Node.js / npm)
 
@@ -49,10 +49,6 @@ For more info run `ezshare --help`
 ## Supported platforms
 - The web client with all operating systems that have a modern browser. iOS, Android, Mac, Windows, ++
 - The command line application works on all major desktop OS (Mac, Windows, Linux)
-
-## TODO
-- Improve name of uploaded file (include parts of original name)
-- Allow select multiple files to download as zip
 
 ## See also:
 - https://github.com/claudiodangelis/qr-filetransfer

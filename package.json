@@ -29,6 +29,8 @@
   },
   "dependencies": {
     "archiver": "^3.1.1",
+    "body-parser": "^1.19.0",
+    "clipboardy": "^2.3.0",
     "content-disposition": "^0.5.3",
     "express": "^4.17.1",
     "express-async-handler": "^1.1.4",

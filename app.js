@@ -15,6 +15,8 @@ const flatMap = require('lodash/flatMap');
 const contentDisposition = require('content-disposition');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const qrcode = require('qrcode-terminal');
+const clipboardy = require('clipboardy');
+const bodyParser = require('body-parser');
 
 const maxFields = 1000;
 const debug = false;
@@ -51,11 +53,25 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       }
   
       console.log(util.inspect({ fields: fields, files: files }));
-      res.writeHead(200, { 'content-type': 'text/html' });
-      res.end(`Upload finished! <a href="/">Back</a>`);
+      res.end();
     });
   }));
 
+  // NOTE: Must support non latin characters
+  app.post('/api/paste', bodyParser.urlencoded({ extended: false }), asyncHandler(async (req, res) => {
+    if (req.body.saveAsFile === 'true') {
+      await fs.writeFile(getFilePath(`client-clipboard-${new Date().getTime()}.txt`), req.body.clipboard);
+    } else {
+      await clipboardy.write(req.body.clipboard);
+    }
+    res.end();
+  }));
+
+  // NOTE: Must support non latin characters
+  app.post('/api/copy', asyncHandler(async (req, res) => {
+    res.send(await clipboardy.read());
+  }));
+  
   async function serveDirZip(filePath, res) {
     const archive = archiver('zip', {
       zlib: { level: zipCompressionLevel },
