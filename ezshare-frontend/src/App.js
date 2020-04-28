@@ -38,6 +38,7 @@ const fileRowStyle = { borderTop: '1px solid #d1cebd', margin: '4px 0', padding:
 
 const Uploader = ({ onUploadSuccess }) => {
   const [uploadProgress, setUploadProgress] = useState();
+  const [uploadSpeed, setUploadSpeed] = useState();
 
   const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
     // console.log(acceptedFiles);
@@ -47,6 +48,10 @@ const Uploader = ({ onUploadSuccess }) => {
     }
 
     async function upload() {
+      let dataTotal;
+      let dataLoaded;
+      let startTime;
+
       try {
         // Toast.fire({ title: `${acceptedFiles.length} ${rejectedFiles.length}` });
         setUploadProgress(0);
@@ -54,7 +59,11 @@ const Uploader = ({ onUploadSuccess }) => {
         acceptedFiles.forEach((file) => data.append('files', file));
     
         function onUploadProgress(progressEvent) {
-          setUploadProgress(progressEvent.loaded / progressEvent.total);
+          dataTotal = progressEvent.total;
+          dataLoaded = progressEvent.loaded;
+          if (!startTime && dataLoaded) startTime = new Date().getTime();
+          setUploadProgress(dataLoaded / dataTotal);
+          if (dataLoaded && startTime) setUploadSpeed(dataLoaded / ((new Date().getTime() - startTime) / 1000));
         }
 
         await axios.post('/api/upload', data, { onUploadProgress });
@@ -66,6 +75,7 @@ const Uploader = ({ onUploadSuccess }) => {
         Toast.fire({ icon: 'error', title: `Upload failed, please try again (${err.message})` });
       } finally {
         setUploadProgress();
+        setUploadSpeed();
       }
     }
 
@@ -77,10 +87,11 @@ const Uploader = ({ onUploadSuccess }) => {
   if (uploadProgress != null) {
     const percentage = Math.round(uploadProgress * 100);
     return (
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
       <div style={{ width: 100 }}>
         <CircularProgressbar value={percentage} text={`${percentage}%`} />
       </div>
+      {uploadSpeed && <div>{(uploadSpeed / 1e6).toFixed(2)}MB/s</div>}
     </div>
     );
   }
