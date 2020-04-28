@@ -22,7 +22,11 @@ const cli = meow(`
 
     $ ezshare /Users/me
 	  Shares all files and folders under /Users/me
-`);
+`, {
+  flags: {
+    devMode: { type: 'boolean' },
+  },
+});
 
 const port = cli.flags.port ? parseInt(cli.flags.port) : undefined;
 const maxUploadSize = cli.flags.maxUploadSize ? parseInt(cli.flags.maxUploadSize) : undefined;

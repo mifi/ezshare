@@ -145,10 +145,10 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     const interfaces = os.networkInterfaces();
     const urls = flatMap(Object.values(interfaces), (addresses) => addresses).filter(({ family, address }) => family === 'IPv4' && address !== '127.0.0.1').map(({ address }) => `http://${address}:${port}/`);
     if (urls.length === 0) return;
-    console.log('Server listening on:');
+    console.log('Server listening:');
     urls.forEach((url) => {
-      console.log(url);
-      console.log('Scan this QR code on your phone:')
+      console.log();
+      console.log(`Scan this QR code on your phone or enter ${url}`);
       console.log();
       qrcode.generate(url);
     });
