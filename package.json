@@ -34,7 +34,7 @@
     "content-disposition": "^0.5.3",
     "express": "^4.17.1",
     "express-async-handler": "^1.1.4",
-    "formidable": "^1.2.1",
+    "formidable": "^1.2.2",
     "fs-extra": "^8.1.0",
     "http-proxy-middleware": "^1.0.3",
     "lodash": "^4.17.15",

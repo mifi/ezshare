@@ -5,7 +5,6 @@ const express = require('express');
 const formidable = require('formidable');
 const { join, basename } = require('path');
 const fs = require('fs-extra');
-const util = require('util');
 const morgan = require('morgan');
 const asyncHandler = require('express-async-handler');
 const archiver = require('archiver');
@@ -38,21 +37,31 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
   // NOTE: Must support non latin characters
   app.post('/api/upload', asyncHandler(async (req, res) => {
+    // console.log(req.headers)
+
     // parse a file upload
-    var form = new formidable.IncomingForm();
-    form.uploadDir = sharedPath;
-    form.keepExtensions = true;
-    form.maxFileSize = maxUploadSize;
-    form.maxFields = maxFields;
+    const form = new formidable({
+      multiples: true,
+      keepExtensions: true,
+      uploadDir: sharedPath,
+      maxFileSize: maxUploadSize,
+      maxFields,
+    });
   
-    form.parse(req, function(err, fields, files) {
+    form.parse(req, function(err, fields, { files: filesIn }) {
       if (err) {
         console.error('Upload failed', err);
         res.send('Upload failed');
         return;
       }
-  
-      console.log(util.inspect({ fields: fields, files: files }));
+
+      if (filesIn) {
+        const files = Array.isArray(filesIn) ? filesIn : [filesIn];
+
+        // console.log(JSON.stringify({ fields, files }, null, 2));
+        console.log('Uploaded files:');
+        files.forEach((f) => console.log(f.name, `(${f.size} bytes)`));
+      }
       res.end();
     });
   }));
