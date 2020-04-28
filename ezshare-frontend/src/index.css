@@ -14,6 +14,7 @@ body {
 
 h1, h2, h3 {
   text-align: center;
+  margin-top: 35px;
   margin-left: 8px;
   margin-right: 8px;
   color: rgba(0,0,0,0.6);

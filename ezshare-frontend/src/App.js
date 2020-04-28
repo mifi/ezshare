@@ -39,24 +39,31 @@ const fileRowStyle = { borderTop: '1px solid #d1cebd', margin: '4px 0', padding:
 const Uploader = ({ onUploadSuccess }) => {
   const [uploadProgress, setUploadProgress] = useState();
 
-  const onDrop = useCallback((acceptedFiles) => {
+  const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
     // console.log(acceptedFiles);
-    const data = new FormData();
-    acceptedFiles.forEach(file => data.append('files', file));
 
-    function onUploadProgress(progressEvent) {
-      setUploadProgress(progressEvent.loaded / progressEvent.total);
+    if (rejectedFiles && rejectedFiles.length > 0) {
+      Toast.fire({ icon: 'warning', title: 'Some file was not accepted' });
     }
 
     async function upload() {
       try {
+        // Toast.fire({ title: `${acceptedFiles.length} ${rejectedFiles.length}` });
+        setUploadProgress(0);
+        const data = new FormData();
+        acceptedFiles.forEach((file) => data.append('files', file));
+    
+        function onUploadProgress(progressEvent) {
+          setUploadProgress(progressEvent.loaded / progressEvent.total);
+        }
+
         await axios.post('/api/upload', data, { onUploadProgress });
 
         Toast.fire({ icon: 'success', title: 'File(s) uploaded successfully' });
         onUploadSuccess();
       } catch (err) {
         console.error('Upload failed', err);
-        Toast.fire({ icon: 'error', title: 'Upload failed, please try again' });
+        Toast.fire({ icon: 'error', title: `Upload failed, please try again (${err.message})` });
       } finally {
         setUploadProgress();
       }
@@ -85,7 +92,7 @@ const Uploader = ({ onUploadSuccess }) => {
       <FaFileUpload size={50} style={{ color: 'rgba(0,0,0,0.2)' }} />
 
       <div style={{ marginTop: 20, padding: '0 30px' }}>
-        {isDragActive ? 'Drop files here to upload' : 'Drag \' drop some files here, or click to select files to upload'}
+        {isDragActive ? 'Drop files here to upload' : 'Drag \'n drop some files here, or press to select files to upload'}
       </div>
     </div>
   );
