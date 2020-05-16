@@ -53,3 +53,11 @@ For more info run `ezshare --help`
 ## See also:
 - https://github.com/claudiodangelis/qr-filetransfer
 - https://github.com/shivensinha4/qr-fileshare
+
+---
+
+Made with ❤️ in 🇳🇴
+
+[More apps by mifi.no](https://mifi.no/)
+
+Follow me on [GitHub](https://github.com/mifi/), [YouTube](https://www.youtube.com/channel/UC6XlvVH63g0H54HSJubURQA), [IG](https://www.instagram.com/mifi.no/), [Twitter](https://twitter.com/mifi_no) for more awesome content!
