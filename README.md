@@ -1,17 +1,17 @@
 # ezshare 🤝
 
-A simple static file server that lets you easily share many big files like photos and videos with friends over a local network without requiring an internet connection. It starts an HTTP server that lists all files and directories in the directory where it is started from. Then anyone can then connect to the server and download files or automatically generated ZIP of whole directories (kind of like Google Drive.) The client can also upload files to the server via their browser. A QR code is generated for ease of use
+A simple **file server** that lets you easily share many big files like photos and videos with friends (or between your devices) over a local network without requiring an internet connection. It starts an HTTP server that lists all files and directories in the directory where it is started from. Then anyone can then connect to the server and download files or automatically generated ZIP of whole directories (kind of like Google Drive.) The client can also upload files to the server via their browser. A QR code is generated for ease of use.
 
 ![Demo](https://github.com/mifi/ezshare/raw/master/screenshot.png)
 
 ## Features
-- Local two-way transfers without going through internet
+- Local two-way transfers without going through the internet
 - Send full quality photos and videos to others without needing a fast internet connection
 - Handles really big files and directories
 - Handles a LOT of files
-- Auto ZIP directories super fast
+- Auto ZIPs directories on-the-fly
 - Two-way sharing of clipboard
-- The web client works on all major platforms, including iOS and Android.
+- The web client works on all major platforms, including iOS and Android (server must run on a Mac/Windows/Linux computer)
 
 ## Install (with Node.js / npm)
 
