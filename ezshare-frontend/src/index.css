@@ -2,22 +2,21 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  background: #f6eedf;
+  background: #f9f9f9;
   color: rgba(0,0,0,0.8)
 }
 
 h1, h2, h3 {
   text-align: center;
-  margin-top: 35px;
+  margin-top: 0px;
   margin-left: 8px;
   margin-right: 8px;
   color: rgba(0,0,0,0.6);
+  font-weight: 400;
   text-transform: uppercase;
 }
 

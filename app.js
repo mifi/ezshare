@@ -109,13 +109,16 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
   app.get('/api/download', asyncHandler(async (req, res) => {
     const filePath = getFilePath(req.query.f);
+    const forceDownload = req.query.forceDownload === 'true';
     const isDir = await isDirectory(filePath);
   
     if (isDir) {
       await serveDirZip(filePath, res);
     } else {
-      // NOTE: Must support non latin characters
-      res.set('Content-disposition', contentDisposition(basename(filePath)));
+      if (forceDownload) {
+        // NOTE: Must support non latin characters
+        res.set('Content-disposition', contentDisposition(basename(filePath)));
+      }
       fs.createReadStream(filePath).pipe(res);
     }
   }));
