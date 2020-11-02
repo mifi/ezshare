@@ -16,6 +16,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const qrcode = require('qrcode-terminal');
 const clipboardy = require('clipboardy');
 const bodyParser = require('body-parser');
+const filenamify = require('filenamify');
 
 const maxFields = 1000;
 const debug = false;
@@ -48,7 +49,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       maxFields,
     });
   
-    form.parse(req, function(err, fields, { files: filesIn }) {
+    form.parse(req, async (err, fields, { files: filesIn }) => {
       if (err) {
         console.error('Upload failed', err);
         res.send('Upload failed');
@@ -61,6 +62,14 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
         // console.log(JSON.stringify({ fields, files }, null, 2));
         console.log('Uploaded files:');
         files.forEach((f) => console.log(f.name, `(${f.size} bytes)`));
+
+        await pMap(files, async (file) => {
+          try {
+            await fs.rename(file.path, join(sharedPath, filenamify(file.name)));
+          } catch (err) {
+            console.error(`Failed to rename ${file.name}`, err);
+          }  
+        }, { concurrency: 10 });
       }
       res.end();
     });
