@@ -1,8 +1,8 @@
-# ezshare 🤝
+![](logo.png)
 
-A simple **file server** that lets you easily share many big files like photos and videos with friends (or between your devices) over a local network without requiring an internet connection. It starts an HTTP server that lists all files and directories in the directory where it is started from. Then anyone can then connect to the server and download files or automatically generated ZIP of whole directories (kind of like Google Drive.) The client can also upload files to the server via their browser. A QR code is generated for ease of use.
+A simple **file server** that lets you easily share many big files like photos and videos with friends (or between your devices) over a local network without requiring an internet connection. It starts an HTTP server that lists all files and directories in the directory where it is started from. Then anyone can then connect to the server and download files or automatically generated ZIP of whole directories (kind of like Google Drive.) The client can also upload files to the server via their browser, and clipboard card be shared both ways. A QR code is generated for convenience.
 
-![Demo](https://github.com/mifi/ezshare/raw/master/screenshot.png)
+![Demo](screenshot.png)
 
 ## Features
 - Local two-way transfers without going through the internet
@@ -50,7 +50,10 @@ For more info run `ezshare --help`
 - The web client with all operating systems that have a modern browser. iOS, Android, Mac, Windows, ++
 - The command line application works on all major desktop OS (Mac, Windows, Linux)
 
-## See also:
+## Credits
+- Icon made by [Freepik](https://www.flaticon.com/authors/freepik) from [www.flaticon.com](https://www.flaticon.com/)
+
+## See also
 - https://github.com/claudiodangelis/qr-filetransfer
 - https://github.com/shivensinha4/qr-fileshare
 
