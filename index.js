@@ -13,7 +13,7 @@ const cli = meow(`
   Options
     [shared_path]  If omitted, will use current directory
     --port  Port to listen (default 8080)
-    --max-upload-size  Max upload file size (default 4 GB)
+    --max-upload-size  Max upload file size (default 16 GB)
     --zip-compression-level  ZIP compression level (default 0, no compression - faster)
 
     Examples
@@ -40,7 +40,7 @@ if (zipCompressionLevel != null) {
 app({
   sharedPath: cli.input[0],
   port: port || 8080,
-  maxUploadSize: maxUploadSize || 4000 * 1024 * 1024,
+  maxUploadSize: maxUploadSize || (16 * 1024 * 1024 * 1024),
   zipCompressionLevel: zipCompressionLevel != null ? zipCompressionLevel : 0,
   devMode,
 });
