@@ -52,7 +52,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     form.parse(req, async (err, fields, { files: filesIn }) => {
       if (err) {
         console.error('Upload failed', err);
-        res.send('Upload failed');
+        res.status(400).send({ error: { message: err.message } });
         return;
       }
 

@@ -83,7 +83,8 @@ const Uploader = ({ onUploadSuccess }) => {
         onUploadSuccess();
       } catch (err) {
         console.error('Upload failed', err);
-        Toast.fire({ icon: 'error', title: `Upload failed, please try again (${err.message})` });
+        const message = err.response?.data?.error?.message || err.message;
+        Toast.fire({ icon: 'error', title: `Upload failed: ${message}` });
       } finally {
         setUploadProgress();
         setUploadSpeed();
