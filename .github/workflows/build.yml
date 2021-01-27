@@ -27,15 +27,28 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Patch
+        run: patch -p1 < standalone.patch
+
       - name: Run pkg
         run: |
+          mkdir win macos linux
+          mkdir win/ezshare linux/ezshare
+          mv node_modules/clipboardy/fallbacks/windows/clipboard_x86_64.exe win/ezshare/clipboard.exe
+          mv node_modules/clipboardy/fallbacks/linux/xsel linux/ezshare/clipboard
+          rm -r node_modules/clipboardy/fallbacks
           pkg .
-          mv ezshare-win.exe ezshare.exe
-          zip ezshare-win.zip ezshare.exe
-          mv ezshare-macos ezshare
-          zip ezshare-macos.zip ezshare
-          mv ezshare-linux ezshare
-          zip ezshare-linux.zip ezshare
+          mv ezshare-win.exe win/ezshare/ezshare.exe
+          mv ezshare-linux linux/ezshare/ezshare
+          mv ezshare-macos macos/ezshare
+          cd win
+          zip -r ../ezshare-win.zip ezshare
+          cd ..
+          cd macos
+          zip ../ezshare-macos.zip ezshare
+          cd ..
+          cd linux
+          zip -r ../ezshare-linux.zip ezshare
 
       - name: Release
         uses: softprops/action-gh-release@v1
