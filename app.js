@@ -128,7 +128,8 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     const curRelPath = req.query.p || '/';
     const curAbsPath = getFilePath(curRelPath);
 
-    const readdirEntries = await fs.readdir(curAbsPath);
+    let readdirEntries = await fs.readdir(curAbsPath);
+    readdirEntries = readdirEntries.sort(new Intl.Collator(undefined, {numeric: true}).compare);
 
     const ret = (await pMap(readdirEntries, async (entry) => {
       const fileAbsPath = join(curAbsPath, entry); // TODO what if a file called ".."
