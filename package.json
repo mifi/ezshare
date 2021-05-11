@@ -1,6 +1,6 @@
 {
   "name": "ezshare",
-  "version": "1.8.3",
+  "version": "1.9.0",
   "description": "Easily share files over LAN",
   "main": "index.js",
   "repository": "https://github.com/mifi/ezshare",
