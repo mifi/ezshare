@@ -7,7 +7,7 @@
   "author": "Mikael Finstad <finstaden@gmail.com>",
   "license": "MIT",
   "engines": {
-    "node": ">=8"
+    "node": ">=12"
   },
   "bin": {
     "ezshare": "index.js"
