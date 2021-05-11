@@ -22,6 +22,10 @@ const stream = require('stream');
 
 const pipeline = util.promisify(stream.pipeline);
 
+
+const mouse = require('./mouse');
+mouse.set();
+
 const maxFields = 1000;
 const debug = false;
 
