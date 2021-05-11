@@ -134,7 +134,7 @@ const FileRow = ({ path, isDir, fileName }) => {
       <Icon size={16} style={{ color: 'rgba(0,0,0,0.5)', marginRight: 10 }} />
       {isDir ? (
         <>
-          <Link to={{ pathname: '/', search: `?p=${encodeURIComponent(path)}`}} style={linkStyle}>{fileName}</Link>
+          <Link to={{ pathname: '/', search: `?p=${encodeURIComponent(path)}`}} style={linkStyle}>{fileName} {fileName === '..' && <span style={{ color: 'rgba(0,0,0,0.3)' }}>(parent dir)</span>}</Link>
           <div style={{ flexGrow: 1 }} />
           <ZipDownload url={getDownloadUrl(path)} />
         </>
@@ -278,7 +278,7 @@ const Browser = () => {
         </div>
 
         <div style={{ ...fileRowStyle }}>
-          <div style={{ wordBreak: 'break-all', fontWeight: 500 }}>{currentDirFiles.curRelPath}</div>
+          <div style={{ wordBreak: 'break-all', fontWeight: 500 }}>{currentDirFiles.curRelPath} <span style={{ color: 'rgba(0,0,0,0.3)' }}>(current dir)</span></div>
           <ZipDownload url={getDownloadUrl(currentDirFiles.curRelPath)} />
         </div>
 
