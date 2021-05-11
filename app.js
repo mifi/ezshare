@@ -17,6 +17,10 @@ const qrcode = require('qrcode-terminal');
 const clipboardy = require('clipboardy');
 const bodyParser = require('body-parser');
 const filenamify = require('filenamify');
+const util = require('util');
+const stream = require('stream');
+
+const pipeline = util.promisify(stream.pipeline);
 
 const maxFields = 1000;
 const debug = false;
@@ -95,17 +99,19 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     const archive = archiver('zip', {
       zlib: { level: zipCompressionLevel },
     });
-  
+
     res.writeHead(200, {
       'Content-Type': 'application/zip',
       // NOTE: Must support non latin characters
       'Content-disposition': contentDisposition(`${basename(filePath)}.zip`),
     });
-    archive.pipe(res);
-  
+
+    const promise = pipeline(archive, res);
+
     archive.directory(filePath, basename(filePath));
     archive.finalize();
-    // res.end();
+
+    await promise;
   }
 
   app.get('/api/download', asyncHandler(async (req, res) => {
@@ -120,7 +126,8 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
         // NOTE: Must support non latin characters
         res.set('Content-disposition', contentDisposition(basename(filePath)));
       }
-      fs.createReadStream(filePath).pipe(res);
+
+      await pipeline(fs.createReadStream(filePath), res);
     }
   }));
 
@@ -131,22 +138,28 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     let readdirEntries = await fs.readdir(curAbsPath);
     readdirEntries = readdirEntries.sort(new Intl.Collator(undefined, {numeric: true}).compare);
 
-    const ret = (await pMap(readdirEntries, async (entry) => {
-      const fileAbsPath = join(curAbsPath, entry); // TODO what if a file called ".."
-      const fileRelPath = join(curRelPath, entry);
-      const isDir = await isDirectory(fileAbsPath);
-
-      return {
-        path: fileRelPath,
-        isDir,
-        fileName: entry,
-      };
-    }, { concurrency: 10 }));
+    const entries = (await pMap(readdirEntries, async (entry) => {
+      try {
+        const fileAbsPath = join(curAbsPath, entry); // TODO what if a file called ".."
+        const fileRelPath = join(curRelPath, entry);
+        const isDir = await isDirectory(fileAbsPath);
+  
+        return {
+          path: fileRelPath,
+          isDir,
+          fileName: entry,
+        };
+      } catch (err) {
+        console.warn(err.message);
+        // https://github.com/mifi/ezshare/issues/29
+        return undefined;
+      }
+    }, { concurrency: 10 })).filter((f) => f);
 
     res.send({
       files: [
         { path: join(curRelPath, '..'), fileName: '..', isDir: true },
-        ...ret
+        ...entries
       ],
       curRelPath,
       sharedPath,

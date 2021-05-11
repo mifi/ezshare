@@ -50,6 +50,12 @@ For more info run `ezshare --help`
 - The web client with all operating systems that have a modern browser. iOS, Android, Mac, Windows, ++
 - The command line application works on all major desktop OS (Mac, Windows, Linux)
 
+## Release
+
+- `np`
+- Wait for GitHub Actions
+- Edit created draft and add release notes
+
 ## Credits
 - Icon made by [Freepik](https://www.flaticon.com/authors/freepik) from [www.flaticon.com](https://www.flaticon.com/)
 
