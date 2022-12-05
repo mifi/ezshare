@@ -50,6 +50,25 @@ For more info run `ezshare --help`
 - The web client with all operating systems that have a modern browser. iOS, Android, Mac, Windows, ++
 - The command line application works on all major desktop OS (Mac, Windows, Linux)
 
+## Share over internet without NAT
+
+If you want to share a file over internet, you can use a service like [Ngrok](https://ngrok.com/) or [Cloudflare tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/).
+
+Ngrok:
+```bash
+ngrok http http://ip.of.ezshare:8080/
+```
+
+Cloudflare tunnel:
+```bash
+cloudflared tunnel --url http://ip.of.ezshare:8080/ --no-autoupdate
+```
+
+Then just share the URL you are given from one of these services.
+
+More alternatives:
+- https://github.com/anderspitman/awesome-tunneling
+
 ## Release
 
 - `np`
