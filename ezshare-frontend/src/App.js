@@ -47,7 +47,7 @@ const Section = ({ children, style }) => (
   </div>
 );
 
-const Uploader = ({ onUploadSuccess }) => {
+const Uploader = ({ onUploadSuccess, targetPath }) => {
   const [uploadProgress, setUploadProgress] = useState();
   const [uploadSpeed, setUploadSpeed] = useState();
 
@@ -77,7 +77,7 @@ const Uploader = ({ onUploadSuccess }) => {
           if (dataLoaded && startTime) setUploadSpeed(dataLoaded / ((new Date().getTime() - startTime) / 1000));
         }
 
-        await axios.post('/api/upload', data, { onUploadProgress });
+        await axios.post(`/api/upload?f=${encodeURIComponent(targetPath)}`, data, { onUploadProgress });
 
         Toast.fire({ icon: 'success', title: 'File(s) uploaded successfully' });
         onUploadSuccess();
@@ -92,7 +92,7 @@ const Uploader = ({ onUploadSuccess }) => {
     }
 
     upload();
-  }, [onUploadSuccess]);
+  }, [onUploadSuccess, targetPath]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
@@ -263,12 +263,7 @@ const Browser = () => {
       </Section>
 
       <Section>
-        <h2>Upload files</h2>
-        <Uploader onUploadSuccess={handleUploadSuccess} />
-      </Section>
-
-      <Section>
-        <h2>Download files</h2>
+        <h2>Files</h2>
 
         <div style={{ wordBreak: 'break-all', padding: '0 5px 8px 5px', fontSize: '.85em', color: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FaShareAlt size={10} style={{ marginRight: 10 }} />
@@ -284,6 +279,10 @@ const Browser = () => {
 
         {dirs.map(FileRow)}
         {nonDirs.map(FileRow)}
+      </Section>
+
+      <Section>
+        <Uploader onUploadSuccess={handleUploadSuccess} targetPath={currentPath}/>
       </Section>
 
       {/* eslint-disable-next-line jsx-a11y/accessible-emoji */}
