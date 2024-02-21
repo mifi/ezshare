@@ -44,11 +44,13 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   app.post('/api/upload', asyncHandler(async (req, res) => {
     // console.log(req.headers)
 
+    let currentDir = getFilePath(req.query.f);
+
     // parse a file upload
     const form = new formidable({
       multiples: true,
       keepExtensions: true,
-      uploadDir: sharedPath,
+      uploadDir: currentDir,
       maxFileSize: maxUploadSize,
       maxFields,
     });
@@ -64,12 +66,12 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
         const files = Array.isArray(filesIn) ? filesIn : [filesIn];
 
         // console.log(JSON.stringify({ fields, files }, null, 2));
-        console.log('Uploaded files:');
+        console.log(`Uploaded files (${currentDir}):`);
         files.forEach((f) => console.log(f.name, `(${f.size} bytes)`));
 
         await pMap(files, async (file) => {
           try {
-            const targetPath = join(sharedPath, filenamify(file.name));
+            const targetPath = join(currentDir, filenamify(file.name));
             if (!(await fs.pathExists(targetPath))) await fs.rename(file.path, targetPath);
           } catch (err) {
             console.error(`Failed to rename ${file.name}`, err);
