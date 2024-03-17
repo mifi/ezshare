@@ -69,7 +69,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
         await pMap(files, async (file) => {
           try {
-            const targetPath = join(sharedPath, filenamify(file.name));
+            const targetPath = join(sharedPath, filenamify(file.name, { maxLength: 255 }));
             if (!(await fs.pathExists(targetPath))) await fs.rename(file.path, targetPath);
           } catch (err) {
             console.error(`Failed to rename ${file.name}`, err);
