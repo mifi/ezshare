@@ -183,8 +183,8 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
   // Serving the frontend depending on dev/production
   if (devMode) app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
-  else app.use('/', express.static(join(__dirname, 'ezshare-frontend/build')));
+  else app.use('/', express.static(join(__dirname, 'ezshare-frontend/dist')));
 
   // Default to index because SPA
-  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/build/index.html')));  
+  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/dist/index.html')));  
 };
