@@ -9,9 +9,7 @@
   "engines": {
     "node": ">=12"
   },
-  "bin": {
-    "ezshare": "index.js"
-  },
+  "bin": "index.js",
   "scripts": {
     "test": "exit 0",
     "build": "cd ezshare-frontend && npm run build",
@@ -46,5 +44,6 @@
   },
   "devDependencies": {
     "concurrently": "^5.1.0"
-  }
+  },
+  "packageManager": "yarn@4.1.1"
 }
