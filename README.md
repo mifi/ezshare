@@ -71,6 +71,7 @@ More alternatives:
 
 ## Release
 
+- Push and wait for green GitHub Actions
 - `np`
 - Wait for GitHub Actions
 - Edit created draft and add release notes
