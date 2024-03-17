@@ -9,22 +9,20 @@
   "engines": {
     "node": ">=12"
   },
-  "bin": {
-    "ezshare": "index.js"
-  },
+  "bin": "index.js",
   "scripts": {
     "test": "exit 0",
     "build": "cd ezshare-frontend && npm run build",
     "prepublish": "npm run build",
-    "start": "concurrently -k \"cd ezshare-frontend && BROWSER=none PORT=3000 npm start\" \"node . --dev-mode\""
+    "start": "concurrently -k \"cd ezshare-frontend && yarn start\" \"node . --dev-mode\""
   },
   "files": [
-    "/ezshare-frontend/build",
+    "/ezshare-frontend/dist",
     "app.js"
   ],
   "pkg": {
     "assets": [
-      "ezshare-frontend/build/**"
+      "ezshare-frontend/dist/**"
     ]
   },
   "dependencies": {
@@ -46,5 +44,6 @@
   },
   "devDependencies": {
     "concurrently": "^5.1.0"
-  }
+  },
+  "packageManager": "yarn@4.1.1"
 }

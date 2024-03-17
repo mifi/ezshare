@@ -69,7 +69,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
         await pMap(files, async (file) => {
           try {
-            const targetPath = join(sharedPath, filenamify(file.name));
+            const targetPath = join(sharedPath, filenamify(file.name, { maxLength: 255 }));
             if (!(await fs.pathExists(targetPath))) await fs.rename(file.path, targetPath);
           } catch (err) {
             console.error(`Failed to rename ${file.name}`, err);
@@ -221,8 +221,8 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
   // Serving the frontend depending on dev/production
   if (devMode) app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
-  else app.use('/', express.static(join(__dirname, 'ezshare-frontend/build')));
+  else app.use('/', express.static(join(__dirname, 'ezshare-frontend/dist')));
 
   // Default to index because SPA
-  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/build/index.html')));  
+  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/dist/index.html')));  
 };
