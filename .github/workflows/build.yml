@@ -6,6 +6,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    env:
+      # https://github.com/actions/setup-node/issues/531
+      SKIP_YARN_COREPACK_CHECK: true
+
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
