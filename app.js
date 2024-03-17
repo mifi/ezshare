@@ -19,6 +19,8 @@ const bodyParser = require('body-parser');
 const filenamify = require('filenamify');
 const util = require('util');
 const stream = require('stream');
+const parseRange = require('range-parser');
+
 
 const pipeline = util.promisify(stream.pipeline);
 
@@ -114,22 +116,56 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     await promise;
   }
 
+  async function serveResumableFileDownload({ filePath, range, res, forceDownload }) {
+    if (forceDownload) {
+      // Set the filename in the Content-disposition header
+      res.set('Content-disposition', contentDisposition(basename(filePath)));
+    }
+
+    const { size: fileSize } = await fs.stat(filePath);
+
+    if (range) {
+      const subranges = parseRange(fileSize, range);
+      if (subranges.type !== 'bytes') throw new Error(`Invalid range type ${subranges.type}`);
+
+      if (subranges.length !== 1) throw new Error('Only a single range is supported');
+      const [{ start, end }] = subranges;
+
+      const contentLength = (end - start) + 1;
+
+      // Set headers for resumable download
+      res.status(206).set({
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': contentLength,
+        'Content-Type': 'application/octet-stream',
+      });
+
+      await pipeline(fs.createReadStream(filePath, { start, end }), res);
+    } else {
+      // Standard download without resuming
+      res.set({
+        // 'Content-Type': 'application/octet-stream',
+        'Content-Length': fileSize,
+      });
+
+      await pipeline(fs.createReadStream(filePath), res);
+    }
+  }
+
   app.get('/api/download', asyncHandler(async (req, res) => {
     const filePath = getFilePath(req.query.f);
     const forceDownload = req.query.forceDownload === 'true';
     const isDir = await isDirectory(filePath);
-  
+ 
     if (isDir) {
       await serveDirZip(filePath, res);
     } else {
-      if (forceDownload) {
-        // NOTE: Must support non latin characters
-        res.set('Content-disposition', contentDisposition(basename(filePath)));
-      }
-
-      await pipeline(fs.createReadStream(filePath), res);
+      const { range } = req.headers;
+      await serveResumableFileDownload({ filePath, range, res, forceDownload });
     }
   }));
+  
 
   app.get('/api/browse', asyncHandler(async (req, res) => {
     const curRelPath = req.query.p || '/';

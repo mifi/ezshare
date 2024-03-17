@@ -688,6 +688,7 @@ __metadata:
     morgan: "npm:^1.9.1"
     p-map: "npm:^4.0.0"
     qrcode-terminal: "npm:^0.12.0"
+    range-parser: "npm:^1.2.1"
   bin:
     ezshare: index.js
   languageName: unknown
@@ -1642,7 +1643,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"range-parser@npm:~1.2.1":
+"range-parser@npm:^1.2.1, range-parser@npm:~1.2.1":
   version: 1.2.1
   resolution: "range-parser@npm:1.2.1"
   checksum: 10c0/96c032ac2475c8027b7a4e9fe22dc0dfe0f6d90b85e496e0f016fbdb99d6d066de0112e680805075bd989905e2123b3b3d002765149294dce0c1f7f01fcc2ea0
