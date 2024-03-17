@@ -19,6 +19,8 @@ const bodyParser = require('body-parser');
 const filenamify = require('filenamify');
 const util = require('util');
 const stream = require('stream');
+const parseRange = require('range-parser');
+
 
 const pipeline = util.promisify(stream.pipeline);
 
@@ -114,57 +116,53 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     await promise;
   }
 
+  async function serveResumableFileDownload({ filePath, range, res, forceDownload }) {
+    if (forceDownload) {
+      // Set the filename in the Content-disposition header
+      res.set('Content-disposition', contentDisposition(basename(filePath)));
+    }
+
+    const { size: fileSize } = await fs.stat(filePath);
+
+    if (range) {
+      const subranges = parseRange(fileSize, range);
+      if (subranges.type !== 'bytes') throw new Error(`Invalid range type ${subranges.type}`);
+
+      if (subranges.length !== 1) throw new Error('Only a single range is supported');
+      const [{ start, end }] = subranges;
+
+      const contentLength = (end - start) + 1;
+
+      // Set headers for resumable download
+      res.status(206).set({
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': contentLength,
+        'Content-Type': 'application/octet-stream',
+      });
+
+      await pipeline(fs.createReadStream(filePath, { start, end }), res);
+    } else {
+      // Standard download without resuming
+      res.set({
+        // 'Content-Type': 'application/octet-stream',
+        'Content-Length': fileSize,
+      });
+
+      await pipeline(fs.createReadStream(filePath), res);
+    }
+  }
+
   app.get('/api/download', asyncHandler(async (req, res) => {
     const filePath = getFilePath(req.query.f);
     const forceDownload = req.query.forceDownload === 'true';
     const isDir = await isDirectory(filePath);
-  
+ 
     if (isDir) {
       await serveDirZip(filePath, res);
     } else {
-      try {
-        const stat = await fs.stat(filePath);
-        const fileSize = stat.size;
-  
-        // if (forceDownload) {
-        //   // Set the filename in the Content-disposition header
-        //   res.set('Content-disposition', contentDisposition(basename(filePath)));
-        // }
-
-        res.set('Content-disposition', contentDisposition(basename(filePath)));
-
-        // Check if the client supports resumable downloads
-        const range = req.headers.range;
-        if (range) {
-          const parts = range.replace(/bytes=/, '').split('-');
-          const start = parseInt(parts[0], 10);
-          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-          const chunkSize = (end - start) + 1;
-  
-          // Set headers for resumable download
-          res.status(206).set({
-            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunkSize,
-            'Content-Type': 'application/octet-stream', // Adjust the content type as needed
-          });
-  
-          // Create a readable stream to send the requested chunk
-          const fileStream = fs.createReadStream(filePath, { start, end });
-          fileStream.pipe(res);
-        } else {
-          // Standard download without resuming
-          res.writeHead(200, {
-            'Content-Type': 'application/octet-stream', // Adjust the content type as needed
-            'Content-Length': fileSize,
-          });
-  
-          await pipeline(fs.createReadStream(filePath), res);
-        }
-      } catch (err) {
-        console.error('Error while processing download request:', err);
-        res.status(500).send({ error: { message: 'Internal Server Error' } });
-      }
+      const { range } = req.headers;
+      await serveResumableFileDownload({ filePath, range, res, forceDownload });
     }
   }));
   
