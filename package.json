@@ -17,7 +17,7 @@
     "start": "concurrently -k \"cd ezshare-frontend && yarn start\" \"node . --dev-mode\""
   },
   "files": [
-    "/ezshare-frontend/dist",
+    "/ezshare-frontend/dist/**",
     "app.js"
   ],
   "pkg": {
