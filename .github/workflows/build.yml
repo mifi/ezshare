@@ -62,7 +62,7 @@ jobs:
             ezshare-win.zip
             ezshare-macos.zip
             ezshare-linux.zip
-  
+
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
