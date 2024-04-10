@@ -72,9 +72,9 @@ More alternatives:
 ## Release
 
 - Push and wait for green GitHub Actions
-- `np`
-- Wait for GitHub Actions
-- Edit created draft and add release notes
+- Run `np` and **Save as draft** in GitHub
+- Wait for GitHub Actions run
+- Edit draft to add release notes, and check that artifacts get added.
 
 ## Credits
 - Icon made by [Freepik](https://www.flaticon.com/authors/freepik) from [www.flaticon.com](https://www.flaticon.com/)
