@@ -27,7 +27,12 @@ const pipeline = util.promisify(stream.pipeline);
 const maxFields = 1000;
 const debug = false;
 
-const isDirectory = async (filePath) => (await fs.lstat(filePath)).isDirectory();
+const isDirectory = async (filePath) => {
+  return (
+    (await fs.stat(filePath)).isDirectory() ||
+    (await fs.lstat(filePath)).isDirectory()
+  );
+}
 
 module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }) => {
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
