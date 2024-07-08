@@ -215,6 +215,9 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       console.log();
       qrcode.generate(url);
     });
+    if (urls.length > 1) {
+      console.log('Note that there are multiple QR codes above, one for each network interface. (scroll up)');
+    }
   });
 
   // Serving the frontend depending on dev/production
