@@ -142,6 +142,7 @@ const FileRow = ({ path, isDir, fileName }) => {
         <>
           <a style={linkStyle} target="_blank" rel="noopener noreferrer" href={getDownloadUrl(path)}>{fileName}</a>
           <div style={{ flexGrow: 1 }} />
+          <input type="checkbox" className="inputcheckbox" value={`${fileName}`} />
           <FileDownload url={getDownloadUrl(path, true)} />
         </>
       )}
@@ -219,6 +220,44 @@ const Browser = () => {
     setClipboardText();
   }
 
+  const collectSelectedItem = () => {
+    let allcheckbox = document.querySelectorAll('.inputcheckbox');
+   
+    let selected = [];
+    allcheckbox.forEach(function (item) {
+      if (item.checked) {
+        selected.push(item.value);
+      }
+    });
+    if(selected.length == 0) return
+    console.log(currentDirFiles)
+    console.log(selected)
+    sendFilesNameAndCurrentDirToServer(selected, currentDirFiles.curRelPath)
+  }
+
+  // Frontend code
+  const sendFilesNameAndCurrentDirToServer = async (files, curRelPath) => {
+    try {
+      const response = await axios.post('/api/zipfilesdownload', {
+        filesName: files,
+        currentDir: curRelPath
+      }, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${new Date().toISOString().slice(0, -5)}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ position: 'fixed', top: 0, right: 0, left: 0, textAlign: 'center', backgroundColor: headingBackgroundColor, borderBottom: '2px solid rgba(0,0,0,0.2)', color: 'white', fontSize: 36, padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -268,6 +307,10 @@ const Browser = () => {
       </Section>
 
       <Section>
+      <button onClick={collectSelectedItem}
+        style={{float: "right", padding: "4px 6px", borderRadius: "10px", cursor: "pointer", backgroundColor: "rgba(0,0,0,0.1)", border: "1px solid rgba(0,0,0,0.2)", margin: "10px 0", display: `flex`
+        }}
+        >Downlaod as Zip</button>
         <h2>Download files</h2>
 
         <div style={{ wordBreak: 'break-all', padding: '0 5px 8px 5px', fontSize: '.85em', color: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
