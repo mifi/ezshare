@@ -39,6 +39,9 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   }
 
   const app = express();
+  // support parsing of application/json type post data
+  app.use(bodyParser.json());
+
 
   if (debug) app.use(morgan('dev'));
 
@@ -54,7 +57,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       maxFileSize: maxUploadSize,
       maxFields,
     });
-  
+
     form.parse(req, async (err, fields, { files: filesIn }) => {
       if (err) {
         console.error('Upload failed', err);
@@ -75,7 +78,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
             if (!(await fs.pathExists(targetPath))) await fs.rename(file.path, targetPath);
           } catch (err) {
             console.error(`Failed to rename ${file.name}`, err);
-          }  
+          }
         }, { concurrency: 10 });
       }
       res.end();
@@ -96,7 +99,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   app.post('/api/copy', asyncHandler(async (req, res) => {
     res.send(await clipboardy.read());
   }));
-  
+
   async function serveDirZip(filePath, res) {
     const archive = archiver('zip', {
       zlib: { level: zipCompressionLevel },
@@ -157,7 +160,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     const filePath = getFilePath(req.query.f);
     const forceDownload = req.query.forceDownload === 'true';
     const isDir = await isDirectory(filePath);
- 
+
     if (isDir) {
       await serveDirZip(filePath, res);
     } else {
@@ -165,21 +168,21 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       await serveResumableFileDownload({ filePath, range, res, forceDownload });
     }
   }));
-  
+
 
   app.get('/api/browse', asyncHandler(async (req, res) => {
     const curRelPath = req.query.p || '/';
     const curAbsPath = getFilePath(curRelPath);
 
     let readdirEntries = await fs.readdir(curAbsPath);
-    readdirEntries = readdirEntries.sort(new Intl.Collator(undefined, {numeric: true}).compare);
+    readdirEntries = readdirEntries.sort(new Intl.Collator(undefined, { numeric: true }).compare);
 
     const entries = (await pMap(readdirEntries, async (entry) => {
       try {
         const fileAbsPath = join(curAbsPath, entry); // TODO what if a file called ".."
         const fileRelPath = join(curRelPath, entry);
         const isDir = await isDirectory(fileAbsPath);
-  
+
         return {
           path: fileRelPath,
           isDir,
@@ -201,6 +204,50 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       sharedPath,
     });
   }));
+
+
+  // zip file name function 
+  const zipName = () => new Date(Date.now() + 19800000).toISOString().slice(0, -5) + ".zip"
+
+  app.post('/api/zipfilesdownload', asyncHandler(async (req, res) => {
+    try {
+      let zipFileName = zipName();
+      let currentdir = req.body.currentDir;
+
+      let files = req.body.filesName;
+      // console.log(files)
+
+
+      res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+      res.setHeader('Content-Type', 'application/zip');
+
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Sets the compression level
+      });
+
+      archive.on('error', (err) => {
+        console.error(err);
+        res.status(500).send({ error: 'Error creating the zip file' });
+      });
+
+      for (let i = 0; i < files.length; i++) {
+        const targetPath = join(__dirname, `.${currentdir}`, files[i]);
+        // const targetPath =  path.join(__dirname, `../tmp/resource/`, files[i]);
+        if (fs.existsSync(targetPath)) {
+          let realname = files[i];
+          archive.file(targetPath, { name: realname }); // Add each file to the archive
+        }
+      }
+      archive.pipe(res);
+      archive.finalize();
+
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).send({ error: 'Internal server error' });
+    }
+  }))
+
+
 
   console.log(`Sharing path ${sharedPath}`);
 
@@ -225,5 +272,5 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   else app.use('/', express.static(join(__dirname, 'ezshare-frontend/dist')));
 
   // Default to index because SPA
-  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/dist/index.html')));  
+  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/dist/index.html')));
 };
