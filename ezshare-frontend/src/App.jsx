@@ -68,7 +68,7 @@ const Uploader = ({ onUploadSuccess }) => {
         setUploadProgress(0);
         const data = new FormData();
         acceptedFiles.forEach((file) => data.append('files', file));
-    
+
         function onUploadProgress(progressEvent) {
           dataTotal = progressEvent.total;
           dataLoaded = progressEvent.loaded;
@@ -100,16 +100,16 @@ const Uploader = ({ onUploadSuccess }) => {
     const percentage = Math.round(uploadProgress * 100);
     return (
       <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-      <div style={{ width: 100 }}>
-        <CircularProgressbar value={percentage} text={`${percentage}%`} />
+        <div style={{ width: 100 }}>
+          <CircularProgressbar value={percentage} text={`${percentage}%`} />
+        </div>
+        {uploadSpeed && <div>{(uploadSpeed / 1e6).toFixed(2)}MB/s</div>}
       </div>
-      {uploadSpeed && <div>{(uploadSpeed / 1e6).toFixed(2)}MB/s</div>}
-    </div>
     );
   }
 
   return (
-    <div {...getRootProps()} style={{ outline: 'none',  background: boxBackgroundColor, cursor: 'pointer', padding: '30px 0', border: `3px dashed ${isDragActive ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+    <div {...getRootProps()} style={{ outline: 'none', background: boxBackgroundColor, cursor: 'pointer', padding: '30px 0', border: `3px dashed ${isDragActive ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
       <input {...getInputProps()} />
 
       <FaFileUpload size={50} style={{ color: iconColor }} />
@@ -134,7 +134,7 @@ const FileRow = ({ path, isDir, fileName }) => {
       <Icon size={16} style={{ color: 'rgba(0,0,0,0.5)', marginRight: 10 }} />
       {isDir ? (
         <>
-          <Link to={{ pathname: '/', search: `?p=${encodeURIComponent(path)}`}} style={linkStyle}>{fileName} {fileName === '..' && <span style={{ color: 'rgba(0,0,0,0.3)' }}>(parent dir)</span>}</Link>
+          <Link to={{ pathname: '/', search: `?p=${encodeURIComponent(path)}` }} style={linkStyle}>{fileName} {fileName === '..' && <span style={{ color: 'rgba(0,0,0,0.3)' }}>(parent dir)</span>}</Link>
           <div style={{ flexGrow: 1 }} />
           <ZipDownload url={getDownloadUrl(path)} />
         </>
@@ -164,7 +164,7 @@ const Browser = () => {
 
   const loadCurrentPath = useCallback(async () => {
     try {
-      const response = await axios.get('/api/browse', { params: { p: currentPath} });
+      const response = await axios.get('/api/browse', { params: { p: currentPath } });
       setCurrentDirFiles(response.data);
     } catch (err) {
       console.error(err);
@@ -220,43 +220,27 @@ const Browser = () => {
     setClipboardText();
   }
 
-  const collectSelectedItem = () => {
+  const collectSelectedItem = (e) => {
+    e.preventDefault()
     let allcheckbox = document.querySelectorAll('.inputcheckbox');
-   
+
     let selected = [];
     allcheckbox.forEach(function (item) {
       if (item.checked) {
         selected.push(item.value);
       }
     });
-    if(selected.length == 0) return
+    if (selected.length == 0) return
     console.log(currentDirFiles)
     console.log(selected)
-    sendFilesNameAndCurrentDirToServer(selected, currentDirFiles.curRelPath)
+    let inp = document.querySelector('input[name="obj"]')
+
+    inp.value = JSON.stringify({ filesName: selected, currentDir: currentDirFiles.curRelPath })
+
+    let form = document.getElementById("sendform");
+    form.submit();
   }
 
-  // Frontend code
-  const sendFilesNameAndCurrentDirToServer = async (files, curRelPath) => {
-    try {
-      const response = await axios.post('/api/zipfilesdownload', {
-        filesName: files,
-        currentDir: curRelPath
-      }, {
-        responseType: 'blob'
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${new Date().toISOString().slice(0, -5)}.zip`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -307,10 +291,16 @@ const Browser = () => {
       </Section>
 
       <Section>
-      <button onClick={collectSelectedItem}
-        style={{float: "right", padding: "4px 6px", borderRadius: "10px", cursor: "pointer", backgroundColor: "rgba(0,0,0,0.1)", border: "1px solid rgba(0,0,0,0.2)", margin: "10px 0", display: `flex`
-        }}
-        >Downlaod as Zip</button>
+        <form action="/api/zipfilesdownload" method="post" id="sendform">
+          <input type="text" style={{ display: 'none' }} name="obj" />
+          {/* <input type="text" style={{ display: 'none' }} name="currentDir" defaultValue={currentDirFiles.curRelPath} /> */}
+          <button type='submit'
+            style={{
+              float: "right", padding: "4px 6px", borderRadius: "10px", cursor: "pointer", backgroundColor: "rgba(0,0,0,0.1)", border: "1px solid rgba(0,0,0,0.2)", margin: "10px 0", display: `flex`
+            }}
+            onClick={collectSelectedItem}
+          >Downlaod as Zip</button>
+        </form>
         <h2>Download files</h2>
 
         <div style={{ wordBreak: 'break-all', padding: '0 5px 8px 5px', fontSize: '.85em', color: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
