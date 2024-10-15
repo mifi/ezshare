@@ -123,10 +123,16 @@ const Uploader = ({ onUploadSuccess }) => {
 
 const getDownloadUrl = (path, forceDownload) => `/api/download?f=${encodeURIComponent(path)}&forceDownload=${forceDownload ? 'true' : 'false'}&_=${new Date().getTime()}`;
 
+const zipFilesDownloadUrl = (files, currentDir) => '/api/zipfilesdownload?filesname=' + JSON.stringify(files) + '&currentdir=' + currentDir;
+
 const FileDownload = ({ url }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink }} href={url} title="Download file"><FaFileDownload size={22} /></a>;
 const ZipDownload = ({ url }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink2 }} href={url} title="Download folder as ZIP"><FaFileArchive size={22} /></a>;
 
-const FileRow = ({ path, isDir, fileName }) => {
+const ZipFilesDownloadBtn = ({ files, currentDir }) => <a style={{
+  float: "right", padding: "4px 6px", borderRadius: "10px", cursor: "pointer", backgroundColor: "rgba(0,0,0,0.1)", border: "1px solid rgba(0,0,0,0.2)", display: `flex`, textDecoration: "none", color: "black"
+}} href={zipFilesDownloadUrl(files, currentDir)} title="Download Zip">Download Zip </a>;
+
+const FileRow = ({ path, isDir, fileName, handlechange }) => {
   const Icon = isDir ? FaFolder : FaFileAlt;
 
   return (
@@ -142,7 +148,7 @@ const FileRow = ({ path, isDir, fileName }) => {
         <>
           <a style={linkStyle} target="_blank" rel="noopener noreferrer" href={getDownloadUrl(path)}>{fileName}</a>
           <div style={{ flexGrow: 1 }} />
-          <input type="checkbox" className="inputcheckbox" value={`${fileName}`} />
+          <input type="checkbox" className="inputcheckbox" value={`${fileName}`} onChange={handlechange} />
           <FileDownload url={getDownloadUrl(path, true)} />
         </>
       )}
@@ -154,6 +160,7 @@ const Browser = () => {
   const [currentDirFiles, setCurrentDirFiles] = useState({ files: [] });
   const [clipboardText, setClipboardText] = useState();
   const [saveAsFile, setSaveAsFile] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const urlSearchParams = useQuery();
   const rootPath = '/'
@@ -174,6 +181,10 @@ const Browser = () => {
   useEffect(() => {
     loadCurrentPath();
   }, [loadCurrentPath]);
+
+  useEffect(() => {
+    setSelectedFiles([])
+  }, [window.location.href])
 
   function handleUploadSuccess() {
     if (isInRootDir) loadCurrentPath();
@@ -220,25 +231,9 @@ const Browser = () => {
     setClipboardText();
   }
 
-  const collectSelectedItem = (e) => {
-    e.preventDefault()
-    let allcheckbox = document.querySelectorAll('.inputcheckbox');
-
-    let selected = [];
-    allcheckbox.forEach(function (item) {
-      if (item.checked) {
-        selected.push(item.value);
-      }
-    });
-    if (selected.length == 0) return
-    console.log(currentDirFiles)
-    console.log(selected)
-    let inp = document.querySelector('input[name="obj"]')
-
-    inp.value = JSON.stringify({ filesName: selected, currentDir: currentDirFiles.curRelPath })
-
-    let form = document.getElementById("sendform");
-    form.submit();
+  function handleSelectedFiles(e) {
+    let value = e.target.value
+    e.target.checked ? setSelectedFiles(selectedFiles => [...selectedFiles, value]) : setSelectedFiles(selectedFiles => selectedFiles.filter(f => f !== value))
   }
 
 
@@ -291,16 +286,10 @@ const Browser = () => {
       </Section>
 
       <Section>
-        <form action="/api/zipfilesdownload" method="post" id="sendform">
-          <input type="text" style={{ display: 'none' }} name="obj" />
-          {/* <input type="text" style={{ display: 'none' }} name="currentDir" defaultValue={currentDirFiles.curRelPath} /> */}
-          <button type='submit'
-            style={{
-              float: "right", padding: "4px 6px", borderRadius: "10px", cursor: "pointer", backgroundColor: "rgba(0,0,0,0.1)", border: "1px solid rgba(0,0,0,0.2)", margin: "10px 0", display: `flex`
-            }}
-            onClick={collectSelectedItem}
-          >Downlaod as Zip</button>
-        </form>
+      
+      
+      {selectedFiles?.length > 0 ? <ZipFilesDownloadBtn files={selectedFiles} currentDir={currentDirFiles.curRelPath} /> : ""}
+
         <h2>Download files</h2>
 
         <div style={{ wordBreak: 'break-all', padding: '0 5px 8px 5px', fontSize: '.85em', color: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -316,7 +305,7 @@ const Browser = () => {
         </div>
 
         {dirs.map(FileRow)}
-        {nonDirs.map(FileRow)}
+        {nonDirs.filter((el) => el.handlechange = handleSelectedFiles).map(FileRow)}
       </Section>
 
       {/* eslint-disable-next-line jsx-a11y/accessible-emoji */}
