@@ -47,11 +47,14 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   // NOTE: Must support non latin characters
   app.post('/api/upload', bodyParser.json(), asyncHandler(async (req, res) => {
     // console.log(req.headers)
+    const uploadDirPathIn = req.query.path || '/';
+
+    const uploadDirPath = await getFileAbsPath(uploadDirPathIn);
 
     // parse a file upload
     const form = Formidable({
       keepExtensions: true,
-      uploadDir: sharedPath,
+      uploadDir: uploadDirPath,
       maxFileSize: maxUploadSize,
       maxFields,
     });
@@ -67,12 +70,12 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
         const files = Array.isArray(filesIn) ? filesIn : [filesIn];
 
         // console.log(JSON.stringify({ fields, files }, null, 2));
-        console.log('Uploaded files:');
+        console.log('Uploaded files to', uploadDirPath);
         files.forEach((f) => console.log(f.originalFilename, `(${f.size} bytes)`));
 
         await pMap(files, async (file) => {
           try {
-            const targetPath = join(sharedPath, filenamify(file.originalFilename, { maxLength: 255 }));
+            const targetPath = join(uploadDirPath, filenamify(file.originalFilename, { maxLength: 255 }));
             if (!(await pathExists(targetPath))) await fs.rename(file.filepath, targetPath); // to prevent overwrites
           } catch (err2) {
             console.error(`Failed to rename ${file.originalFilename}`, err2);

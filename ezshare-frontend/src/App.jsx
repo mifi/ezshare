@@ -47,7 +47,7 @@ const Section = ({ children, style }) => (
   </div>
 );
 
-const Uploader = ({ onUploadSuccess }) => {
+const Uploader = ({ onUploadSuccess, cwd }) => {
   const [uploadProgress, setUploadProgress] = useState();
   const [uploadSpeed, setUploadSpeed] = useState();
 
@@ -77,7 +77,7 @@ const Uploader = ({ onUploadSuccess }) => {
           if (dataLoaded && startTime) setUploadSpeed(dataLoaded / ((Date.now() - startTime) / 1000));
         };
 
-        await axios.post('/api/upload', data, { onUploadProgress });
+        await axios.post(`/api/upload?path=${encodeURIComponent(cwd)}`, data, { onUploadProgress });
 
         Toast.fire({ icon: 'success', title: 'File(s) uploaded successfully' });
         onUploadSuccess();
@@ -92,7 +92,7 @@ const Uploader = ({ onUploadSuccess }) => {
     }
 
     upload();
-  }, [onUploadSuccess]);
+  }, [cwd, onUploadSuccess]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
@@ -288,7 +288,7 @@ const Browser = () => {
 
       <Section>
         <h2>Upload files</h2>
-        <Uploader onUploadSuccess={handleUploadSuccess} />
+        <Uploader cwd={currentDirFiles.cwd} onUploadSuccess={handleUploadSuccess} />
       </Section>
 
       <Section>
