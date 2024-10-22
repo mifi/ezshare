@@ -110,7 +110,7 @@ const Uploader = ({ onUploadSuccess, cwd }) => {
 
   return (
     // eslint-disable-next-line react/jsx-props-no-spreading
-    <div {...getRootProps()} style={{ outline: 'none', background: boxBackgroundColor, cursor: 'pointer', padding: '30px 0', border: `3px dashed ${isDragActive ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+    <div {...getRootProps()} style={{ outline: 'none', background: boxBackgroundColor, cursor: 'pointer', padding: '30px 0', border: `3px dashed ${isDragActive ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', marginBottom: '.5em' }}>
       {/* eslint-disable-next-line react/jsx-props-no-spreading */}
       <input {...getInputProps()} />
 
@@ -287,22 +287,9 @@ const Browser = () => {
       </Section>
 
       <Section>
-        <h2>Upload files</h2>
-        <Uploader cwd={currentDirFiles.cwd} onUploadSuccess={handleUploadSuccess} />
-      </Section>
+        <h2>Files</h2>
 
-      <Section>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', marginBottom: '.1em' }}>
-          <h2 style={{ marginBottom: 0 }}>Download files</h2>
-          <div style={{ flexGrow: 1 }} />
-          {selectedFiles.length > 0 && (
-            <div>
-              <span style={{ marginRight: '.2em' }}>{selectedFiles.length} selected</span>
-              <input type="checkbox" checked onChange={() => setSelectedFilesMap({})} style={{ marginRight: '1em' }} />
-              <ZipDownload url={`/api/zip-files?files=${encodeURIComponent(JSON.stringify(selectedFiles))}&_=${Date.now()}`} title="Download as ZIP" />
-            </div>
-          )}
-        </div>
+        <Uploader cwd={currentDirFiles.cwd} onUploadSuccess={handleUploadSuccess} />
 
         <div style={{ wordBreak: 'break-all', padding: '0 5px 8px 5px', fontSize: '.85em', color: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FaShareAlt size={10} style={{ marginRight: 5, marginLeft: 5 }} />
@@ -313,7 +300,16 @@ const Browser = () => {
 
         <div style={{ ...fileRowStyle }}>
           <div style={{ wordBreak: 'break-all', fontWeight: 500 }}>{currentDirFiles.cwd} <span style={{ color: 'rgba(0,0,0,0.3)' }}>(current dir)</span></div>
-          <ZipDownload url={getDownloadUrl(currentDirFiles.cwd)} style={{ marginLeft: 10, marginBottom: -5 }} />
+
+          {selectedFiles.length > 0 ? (
+            <span>
+              <span style={{ marginRight: '.2em' }}>{selectedFiles.length} selected</span>
+              <input type="checkbox" checked onChange={() => setSelectedFilesMap({})} style={{ marginRight: '1em' }} />
+              <ZipDownload url={`/api/zip-files?files=${encodeURIComponent(JSON.stringify(selectedFiles))}&_=${Date.now()}`} title="Download selected as ZIP" style={{ marginBottom: -5 }} />
+            </span>
+          ) : (
+            <ZipDownload url={getDownloadUrl(currentDirFiles.cwd)} style={{ marginLeft: 10, marginBottom: -5 }} />
+          )}
         </div>
 
         {/* eslint-disable-next-line react/jsx-props-no-spreading */}
