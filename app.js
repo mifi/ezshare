@@ -19,6 +19,7 @@ import filenamify from 'filenamify';
 import util from 'node:util';
 import stream from 'node:stream';
 import parseRange from 'range-parser';
+import { fileURLToPath } from 'node:url';
 
 
 const pipeline = util.promisify(stream.pipeline);
@@ -264,8 +265,8 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
 
   // Serving the frontend depending on dev/production
   if (devMode) app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
-  else app.use('/', express.static(join(__dirname, 'ezshare-frontend/dist')));
+  else app.use('/', express.static(fileURLToPath(new URL('ezshare-frontend/dist', import.meta.url))));
 
   // Default to index because SPA
-  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/dist/index.html')));
+  app.use('*', (req, res) => res.sendFile(fileURLToPath(new URL('ezshare-frontend/dist/index.html', import.meta.url))));
 };
