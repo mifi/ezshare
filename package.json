@@ -6,11 +6,13 @@
   "repository": "https://github.com/mifi/ezshare",
   "author": "Mikael Finstad <finstaden@gmail.com>",
   "license": "MIT",
+  "type": "module",
   "engines": {
-    "node": ">=12"
+    "node": ">=18"
   },
   "bin": "index.js",
   "scripts": {
+    "lint": "eslint .",
     "test": "exit 0",
     "build": "cd ezshare-frontend && npm run build",
     "prepack": "npm run build",
@@ -44,7 +46,17 @@
     "range-parser": "^1.2.1"
   },
   "devDependencies": {
-    "concurrently": "^5.1.0"
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "concurrently": "^5.1.0",
+    "eslint": "^8.2.0",
+    "eslint-config-mifi": "^0.0.6",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-jsx-a11y": "^6.5.1",
+    "eslint-plugin-react": "^7.28.0",
+    "eslint-plugin-react-hooks": "^4.3.0",
+    "eslint-plugin-unicorn": "^51.0.1",
+    "typescript": "~5.3.0"
   },
   "packageManager": "yarn@4.5.1"
 }

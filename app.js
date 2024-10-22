@@ -1,26 +1,23 @@
-#!/usr/bin/env node
-'use strict';
-
-const express = require('express');
-const formidable = require('formidable');
-const { join, basename } = require('path');
-const assert = require('assert');
-const fs = require('fs-extra');
-const morgan = require('morgan');
-const asyncHandler = require('express-async-handler');
-const archiver = require('archiver');
-const pMap = require('p-map');
-const os = require('os');
-const flatMap = require('lodash/flatMap');
-const contentDisposition = require('content-disposition');
-const { createProxyMiddleware } = require('http-proxy-middleware');
-const qrcode = require('qrcode-terminal');
-const clipboardy = require('clipboardy');
-const bodyParser = require('body-parser');
-const filenamify = require('filenamify');
-const util = require('util');
-const stream = require('stream');
-const parseRange = require('range-parser');
+import express from 'express';
+import Formidable from 'formidable';
+import { join, basename } from 'node:path';
+import assert from 'node:assert';
+import fs from 'fs-extra';
+import morgan from 'morgan';
+import asyncHandler from 'express-async-handler';
+import archiver from 'archiver';
+import pMap from 'p-map';
+import os from 'node:os';
+import flatMap from 'lodash/flatMap.js';
+import contentDisposition from 'content-disposition';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import qrcode from 'qrcode-terminal';
+import clipboardy from 'clipboardy';
+import bodyParser from 'body-parser';
+import filenamify from 'filenamify';
+import util from 'node:util';
+import stream from 'node:stream';
+import parseRange from 'range-parser';
 
 
 const pipeline = util.promisify(stream.pipeline);
@@ -28,7 +25,7 @@ const pipeline = util.promisify(stream.pipeline);
 const maxFields = 1000;
 const debug = false;
 
-module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }) => {
+export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }) => {
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
   const sharedPath = sharedPathIn || process.cwd();
 
@@ -49,7 +46,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     // console.log(req.headers)
 
     // parse a file upload
-    const form = new formidable({
+    const form = new Formidable({
       multiples: true,
       keepExtensions: true,
       uploadDir: sharedPath,
@@ -75,8 +72,8 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
           try {
             const targetPath = join(sharedPath, filenamify(file.name, { maxLength: 255 }));
             if (!(await fs.pathExists(targetPath))) await fs.rename(file.path, targetPath);
-          } catch (err) {
-            console.error(`Failed to rename ${file.name}`, err);
+          } catch (err2) {
+            console.error(`Failed to rename ${file.name}`, err2);
           }
         }, { concurrency: 10 });
       }
@@ -86,8 +83,9 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
   // NOTE: Must support non latin characters
   app.post('/api/paste', bodyParser.urlencoded({ extended: false }), asyncHandler(async (req, res) => {
+    // eslint-disable-next-line unicorn/prefer-ternary
     if (req.body.saveAsFile === 'true') {
-      await fs.writeFile(join(sharedPath, `client-clipboard-${new Date().getTime()}.txt`), req.body.clipboard);
+      await fs.writeFile(join(sharedPath, `client-clipboard-${Date.now()}.txt`), req.body.clipboard);
     } else {
       await clipboardy.write(req.body.clipboard);
     }
@@ -173,11 +171,11 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     const browseAbsPath = await getFileAbsPath(browseRelPath);
 
     let readdirEntries = await fs.readdir(browseAbsPath, { withFileTypes: true });
-    readdirEntries = readdirEntries.sort(({ name: a }, { name: b }) => new Intl.Collator(undefined, {numeric: true}).compare(a, b));
+    readdirEntries = readdirEntries.sort(({ name: a }, { name: b }) => new Intl.Collator(undefined, { numeric: true }).compare(a, b));
 
     const entries = (await pMap(readdirEntries, async (entry) => {
       try {
-         // TODO what if a file called ".."
+        // TODO what if a file called ".."
         const entryRelPath = join(browseRelPath, entry.name);
         const entryAbsPath = join(browseAbsPath, entry.name);
         const entryRealPath = await fs.realpath(entryAbsPath);
@@ -189,7 +187,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
         const stat = await fs.lstat(entryRealPath);
         const isDir = stat.isDirectory();
-  
+
         return [{
           path: entryRelPath,
           isDir,
@@ -205,7 +203,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     res.send({
       files: [
         { path: join(browseRelPath, '..'), fileName: '..', isDir: true },
-        ...entries
+        ...entries,
       ],
       cwd: browseRelPath,
       sharedPath,
@@ -238,9 +236,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     archive.finalize();
 
     await promise;
-  }))
-
-
+  }));
 
 
   console.log(`Sharing path ${sharedPath}`);

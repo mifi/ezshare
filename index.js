@@ -1,10 +1,8 @@
 #!/usr/bin/env node
-'use strict';
+import meow from 'meow';
+import assert from 'node:assert';
 
-const meow = require('meow');
-const assert = require('assert');
-
-const app = require('./app');
+import app from './app.js';
 
 const cli = meow(`
   Usage
@@ -21,16 +19,16 @@ const cli = meow(`
     Shares all files and folders under the current directory (cd)
 
     $ ezshare /Users/me
-	  Shares all files and folders under /Users/me
+    Shares all files and folders under /Users/me
 `, {
   flags: {
     devMode: { type: 'boolean' },
   },
 });
 
-const port = cli.flags.port ? parseInt(cli.flags.port) : undefined;
-const maxUploadSize = cli.flags.maxUploadSize ? parseInt(cli.flags.maxUploadSize) : undefined;
-const zipCompressionLevel = cli.flags.zipCompressionLevel ? parseInt(cli.flags.zipCompressionLevel) : undefined;
+const port = cli.flags.port ? parseInt(cli.flags.port, 10) : undefined;
+const maxUploadSize = cli.flags.maxUploadSize ? parseInt(cli.flags.maxUploadSize, 10) : undefined;
+const zipCompressionLevel = cli.flags.zipCompressionLevel ? parseInt(cli.flags.zipCompressionLevel, 10) : undefined;
 const devMode = !!cli.flags.devMode;
 
 if (zipCompressionLevel != null) {
