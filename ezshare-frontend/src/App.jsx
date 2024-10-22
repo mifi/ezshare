@@ -42,7 +42,7 @@ const linkStyle = {
 const fileRowStyle = { borderTop: '1px solid #d1cebd', margin: '4px 0', padding: '4px 0 2px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 
 const Section = ({ children, style }) => (
-  <div style={{ boxSizing: 'border-box', width: '100%', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', marginBottom: 30, padding: '20px 15px 25px 15px', borderRadius: 5, ...style }}>
+  <div style={{ boxSizing: 'border-box', width: '100%', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', marginBottom: 40, borderRadius: 5, ...style }}>
     {children}
   </div>
 );
