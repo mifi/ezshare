@@ -25,5 +25,8 @@
     "start": "vite",
     "build": "vite build"
   },
-  "packageManager": "yarn@4.5.1"
+  "packageManager": "yarn@4.5.1",
+  "devDependencies": {
+    "sass-embedded": "^1.80.3"
+  }
 }

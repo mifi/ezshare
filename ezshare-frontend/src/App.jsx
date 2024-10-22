@@ -42,7 +42,7 @@ const linkStyle = {
 const fileRowStyle = { borderTop: '1px solid #d1cebd', margin: '4px 0', padding: '4px 0 2px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 
 const Section = ({ children, style }) => (
-  <div style={{ boxSizing: 'border-box', width: '100%', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', marginBottom: 50, padding: '20px 15px 25px 15px', borderRadius: 5, ...style }}>
+  <div style={{ boxSizing: 'border-box', width: '100%', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', marginBottom: 30, padding: '20px 15px 25px 15px', borderRadius: 5, ...style }}>
     {children}
   </div>
 );
@@ -160,7 +160,7 @@ const Browser = () => {
   const rootPath = '/'
   const currentPath = urlSearchParams.get('p') || rootPath;
 
-  const isLoadingDir = currentPath !== currentDirFiles.curRelPath;
+  const isLoadingDir = currentPath !== currentDirFiles.cwd;
   const isInRootDir = currentPath === rootPath;
 
   const loadCurrentPath = useCallback(async () => {
@@ -199,6 +199,7 @@ const Browser = () => {
       data.append('clipboard', clipboardData);
       data.append('saveAsFile', saveAsFile);
       await axios.post('/api/paste', data);
+      loadCurrentPath();
 
       Toast.fire({ icon: 'success', title: saveAsFile ? 'Pasted text has been saved to a file on other side' : 'Pasted text has been sent to the clipboard on other side' });
     } catch (err) {
@@ -287,7 +288,7 @@ const Browser = () => {
       </Section>
 
       <Section>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1em' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', marginBottom: '.1em' }}>
           <h2 style={{ marginBottom: 0 }}>Download files</h2>
           <div style={{ flexGrow: 1 }} />
           {selectedFiles.length > 0 && (
@@ -300,15 +301,15 @@ const Browser = () => {
         </div>
 
         <div style={{ wordBreak: 'break-all', padding: '0 5px 8px 5px', fontSize: '.85em', color: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <FaShareAlt size={10} style={{ marginRight: 10 }} />
-          {currentDirFiles.sharedPath}
+          <FaShareAlt size={10} style={{ marginRight: 5, marginLeft: 5 }} />
+          <span title="Shared folder">{currentDirFiles.sharedPath}</span>
           <div style={{ flexGrow: 1 }} />
-          <FaRedoAlt size={12} role="button" style={{ color: colorLink, cursor: 'pointer', padding: '5px 1px 5px 5px' }} onClick={handleRefreshClick} />
+          <FaRedoAlt size={12} role="button" title="Refresh" style={{ color: colorLink, cursor: 'pointer', padding: '5px 1px 5px 5px' }} onClick={handleRefreshClick} />
         </div>
 
         <div style={{ ...fileRowStyle }}>
-          <div style={{ wordBreak: 'break-all', fontWeight: 500 }}>{currentDirFiles.curRelPath} <span style={{ color: 'rgba(0,0,0,0.3)' }}>(current dir)</span></div>
-          <ZipDownload url={getDownloadUrl(currentDirFiles.curRelPath)} style={{ marginLeft: 10, marginBottom: -5,  }} />
+          <div style={{ wordBreak: 'break-all', fontWeight: 500 }}>{currentDirFiles.cwd} <span style={{ color: 'rgba(0,0,0,0.3)' }}>(current dir)</span></div>
+          <ZipDownload url={getDownloadUrl(currentDirFiles.cwd)} style={{ marginLeft: 10, marginBottom: -5,  }} />
         </div>
 
         {dirs.map(FileRow)}

@@ -4,6 +4,7 @@
 const express = require('express');
 const formidable = require('formidable');
 const { join, basename } = require('path');
+const assert = require('assert');
 const fs = require('fs-extra');
 const morgan = require('morgan');
 const asyncHandler = require('express-async-handler');
@@ -27,15 +28,16 @@ const pipeline = util.promisify(stream.pipeline);
 const maxFields = 1000;
 const debug = false;
 
-const isDirectory = async (filePath) => (await fs.lstat(filePath)).isDirectory();
-
 module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }) => {
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
   const sharedPath = sharedPathIn || process.cwd();
 
-  function getFilePath(relPath) {
+  async function getFileAbsPath(relPath) {
     if (relPath == null) return sharedPath;
-    return join(sharedPath, join('/', relPath));
+    const absPath = join(sharedPath, join('/', relPath));
+    const realPath = await fs.realpath(absPath);
+    assert(realPath.startsWith(sharedPath), 'Path must be within shared path');
+    return realPath;
   }
 
   const app = express();
@@ -85,7 +87,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   // NOTE: Must support non latin characters
   app.post('/api/paste', bodyParser.urlencoded({ extended: false }), asyncHandler(async (req, res) => {
     if (req.body.saveAsFile === 'true') {
-      await fs.writeFile(getFilePath(`client-clipboard-${new Date().getTime()}.txt`), req.body.clipboard);
+      await fs.writeFile(join(sharedPath, `client-clipboard-${new Date().getTime()}.txt`), req.body.clipboard);
     } else {
       await clipboardy.write(req.body.clipboard);
     }
@@ -154,11 +156,11 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   }
 
   app.get('/api/download', asyncHandler(async (req, res) => {
-    const filePath = getFilePath(req.query.f);
+    const filePath = await getFileAbsPath(req.query.f);
     const forceDownload = req.query.forceDownload === 'true';
-    const isDir = await isDirectory(filePath);
 
-    if (isDir) {
+    const lstat = await fs.lstat(filePath);
+    if (lstat.isDirectory()) {
       await serveDirZip(filePath, res);
     } else {
       const { range } = req.headers;
@@ -166,38 +168,46 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     }
   }));
 
-
   app.get('/api/browse', asyncHandler(async (req, res) => {
-    const curRelPath = req.query.p || '/';
-    const curAbsPath = getFilePath(curRelPath);
+    const browseRelPath = req.query.p || '/';
+    const browseAbsPath = await getFileAbsPath(browseRelPath);
 
-    let readdirEntries = await fs.readdir(curAbsPath);
-    readdirEntries = readdirEntries.sort(new Intl.Collator(undefined, { numeric: true }).compare);
+    let readdirEntries = await fs.readdir(browseAbsPath, { withFileTypes: true });
+    readdirEntries = readdirEntries.sort(({ name: a }, { name: b }) => new Intl.Collator(undefined, {numeric: true}).compare(a, b));
 
     const entries = (await pMap(readdirEntries, async (entry) => {
       try {
-        const fileAbsPath = join(curAbsPath, entry); // TODO what if a file called ".."
-        const fileRelPath = join(curRelPath, entry);
-        const isDir = await isDirectory(fileAbsPath);
+         // TODO what if a file called ".."
+        const entryRelPath = join(browseRelPath, entry.name);
+        const entryAbsPath = join(browseAbsPath, entry.name);
+        const entryRealPath = await fs.realpath(entryAbsPath);
 
-        return {
-          path: fileRelPath,
+        if (!entryRealPath.startsWith(sharedPath)) {
+          console.warn('Ignoring symlink pointing outside shared path', entryRealPath);
+          return [];
+        }
+
+        const stat = await fs.lstat(entryRealPath);
+        const isDir = stat.isDirectory();
+  
+        return [{
+          path: entryRelPath,
           isDir,
-          fileName: entry,
-        };
+          fileName: entry.name,
+        }];
       } catch (err) {
         console.warn(err.message);
         // https://github.com/mifi/ezshare/issues/29
-        return undefined;
+        return [];
       }
-    }, { concurrency: 10 })).filter((f) => f);
+    }, { concurrency: 10 })).flat();
 
     res.send({
       files: [
-        { path: join(curRelPath, '..'), fileName: '..', isDir: true },
+        { path: join(browseRelPath, '..'), fileName: '..', isDir: true },
         ...entries
       ],
-      curRelPath,
+      cwd: browseRelPath,
       sharedPath,
     });
   }));
@@ -219,13 +229,11 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
 
     const promise = pipeline(archive, res);
 
-    files.forEach((file) => {
-      const filePath = getFilePath(file);
-      if (fs.existsSync(filePath)) {
-        // Add each file to the archive:
-        archive.file(filePath, { name: file });
-      }
-    });
+    await pMap(files, async (file) => {
+      const absPath = await getFileAbsPath(file);
+      // Add each file to the archive:
+      archive.file(absPath, { name: file });
+    }, { concurrency: 1 });
 
     archive.finalize();
 
