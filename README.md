@@ -1,6 +1,6 @@
 ![](logo.png)
 
-A simple **file server** that lets you easily share many big files like photos and videos with friends (or between your devices) over a local network without requiring an internet connection. It starts an HTTP server that lists all files and directories in the directory where it is started from. Then anyone can then connect to the server and download files or automatically generated ZIP of whole directories (kind of like Google Drive.) The client can also upload files to the server via their browser, and clipboard card be shared both ways. A QR code is generated for convenience.
+A simple **file server** that lets you easily share many big files like photos and videos with friends (or between your devices) over a local network without requiring an internet connection. It starts an HTTP server that lists all files and directories in the directory where it is started from. Then anyone can then connect to the server and download files or automatically generated ZIP of whole directories, kind of like a self hosted Google Drive. The client can also upload files to the server via their browser, and clipboard card be shared both ways. A QR code is generated for convenience.
 
 ![Demo](screenshot.png)
 
