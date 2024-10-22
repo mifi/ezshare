@@ -21,6 +21,7 @@ const cli = meow(`
     $ ezshare /Users/me
     Shares all files and folders under /Users/me
 `, {
+  importMeta: import.meta,
   flags: {
     devMode: { type: 'boolean' },
   },

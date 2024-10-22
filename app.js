@@ -1,8 +1,9 @@
 import express from 'express';
 import Formidable from 'formidable';
+import { createReadStream } from 'node:fs';
 import { join, basename } from 'node:path';
 import assert from 'node:assert';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
 import morgan from 'morgan';
 import asyncHandler from 'express-async-handler';
 import archiver from 'archiver';
@@ -25,6 +26,8 @@ const pipeline = util.promisify(stream.pipeline);
 const maxFields = 1000;
 const debug = false;
 
+const pathExists = (path) => fs.access(path, fs.constants.F_OK).then(() => true).catch(() => false);
+
 export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }) => {
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
   const sharedPath = sharedPathIn || process.cwd();
@@ -46,8 +49,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
     // console.log(req.headers)
 
     // parse a file upload
-    const form = new Formidable({
-      multiples: true,
+    const form = Formidable({
       keepExtensions: true,
       uploadDir: sharedPath,
       maxFileSize: maxUploadSize,
@@ -66,14 +68,14 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
 
         // console.log(JSON.stringify({ fields, files }, null, 2));
         console.log('Uploaded files:');
-        files.forEach((f) => console.log(f.name, `(${f.size} bytes)`));
+        files.forEach((f) => console.log(f.originalFilename, `(${f.size} bytes)`));
 
         await pMap(files, async (file) => {
           try {
-            const targetPath = join(sharedPath, filenamify(file.name, { maxLength: 255 }));
-            if (!(await fs.pathExists(targetPath))) await fs.rename(file.path, targetPath);
+            const targetPath = join(sharedPath, filenamify(file.originalFilename, { maxLength: 255 }));
+            if (!(await pathExists(targetPath))) await fs.rename(file.filepath, targetPath); // to prevent overwrites
           } catch (err2) {
-            console.error(`Failed to rename ${file.name}`, err2);
+            console.error(`Failed to rename ${file.originalFilename}`, err2);
           }
         }, { concurrency: 10 });
       }
@@ -141,7 +143,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
         'Content-Type': 'application/octet-stream',
       });
 
-      await pipeline(fs.createReadStream(filePath, { start, end }), res);
+      await pipeline(createReadStream(filePath, { start, end }), res);
     } else {
       // Standard download without resuming
       res.set({
@@ -149,7 +151,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
         'Content-Length': fileSize,
       });
 
-      await pipeline(fs.createReadStream(filePath), res);
+      await pipeline(createReadStream(filePath), res);
     }
   }
 
