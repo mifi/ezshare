@@ -14,7 +14,7 @@
     "test": "exit 0",
     "build": "cd ezshare-frontend && npm run build",
     "prepack": "npm run build",
-    "start": "concurrently -k \"cd ezshare-frontend && yarn start\" \"node . --dev-mode\""
+    "start": "concurrently -k \"cd ezshare-frontend && yarn start\" \"node --watch . --dev-mode\""
   },
   "files": [
     "/ezshare-frontend/dist/**",

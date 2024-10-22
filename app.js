@@ -39,14 +39,11 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   }
 
   const app = express();
-  // support parsing of application/json type post data
-  app.use(bodyParser.json());
-
 
   if (debug) app.use(morgan('dev'));
 
   // NOTE: Must support non latin characters
-  app.post('/api/upload', asyncHandler(async (req, res) => {
+  app.post('/api/upload', bodyParser.json(), asyncHandler(async (req, res) => {
     // console.log(req.headers)
 
     // parse a file upload
@@ -206,38 +203,33 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   }));
 
 
-  //this function generates a timestamp-based name for a .zip file
-  const zipName = () => new Date(Date.now() + 19800000).toISOString().slice(0, -5) + ".zip"
+  app.get('/api/zip-files', asyncHandler(async (req, res) => {
+    const zipFileName = `${new Date().toISOString().replace(/^(\d+-\d+-\d+)T(\d+):(\d+):(\d+).*$/, '$1 $2.$3.$3')}.zip`;
+    const { files: filesJson } = req.query;
 
-  app.get('/api/zipfilesdownload', asyncHandler(async (req, res) => {
-    let zipFileName = zipName();
-    let { filesname, currentdir } = req.query;
+    const files = JSON.parse(filesJson);
 
-    let files = JSON.parse(filesname);
+    const archive = archiver('zip', { zlib: { level: zipCompressionLevel } });
 
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
-
-    const archive = archiver('zip', {
-      zlib: { level: 9 } // Sets the compression level
+    res.writeHead(200, {
+      'Content-Type': 'application/zip',
+      // NOTE: Must support non latin characters
+      'Content-Disposition': contentDisposition(zipFileName),
     });
 
-    archive.on('error', (err) => {
-      console.error(err);
-      res.status(500).send({ error: 'Error creating the zip file' });
-    });
+    const promise = pipeline(archive, res);
 
-    archive.directory
-    for (let i = 0; i < files.length; i++) {
-      const targetPath = join(__dirname, `.${currentdir}`, files[i]);
-      if (fs.existsSync(targetPath)) {
-        let realname = files[i];
-        archive.file(targetPath, { name: realname }); // Add each file to the archive
+    files.forEach((file) => {
+      const filePath = getFilePath(file);
+      if (fs.existsSync(filePath)) {
+        // Add each file to the archive:
+        archive.file(filePath, { name: file });
       }
-    }
-    archive.pipe(res);
+    });
+
     archive.finalize();
 
+    await promise;
   }))
 
 

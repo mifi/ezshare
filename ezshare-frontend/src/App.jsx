@@ -123,32 +123,26 @@ const Uploader = ({ onUploadSuccess }) => {
 
 const getDownloadUrl = (path, forceDownload) => `/api/download?f=${encodeURIComponent(path)}&forceDownload=${forceDownload ? 'true' : 'false'}&_=${new Date().getTime()}`;
 
-const zipFilesDownloadUrl = (files, currentDir) => '/api/zipfilesdownload?filesname=' + JSON.stringify(files) + '&currentdir=' + currentDir;
-
 const FileDownload = ({ url }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink }} href={url} title="Download file"><FaFileDownload size={22} /></a>;
-const ZipDownload = ({ url }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink2 }} href={url} title="Download folder as ZIP"><FaFileArchive size={22} /></a>;
+const ZipDownload = ({ url, title = "Download folder as ZIP", style }) => <a style={{ textDecoration: 'none', color: colorLink2, verticalAlign: 'middle', ...style }} href={url} title={title}><FaFileArchive size={22} /></a>;
 
-const ZipFilesDownloadBtn = ({ files, currentDir }) => <a style={{
-  float: "right", padding: "4px 6px", borderRadius: "10px", cursor: "pointer", backgroundColor: "rgba(0,0,0,0.1)", border: "1px solid rgba(0,0,0,0.2)", display: `flex`, textDecoration: "none", color: "black"
-}} href={zipFilesDownloadUrl(files, currentDir)} title="Download Zip">Download Zip </a>;
-
-const FileRow = ({ path, isDir, fileName, handlechange }) => {
+const FileRow = ({ path, isDir, fileName, onCheckedChange, checked }) => {
   const Icon = isDir ? FaFolder : FaFileAlt;
 
   return (
-    <div key={`${path}_${fileName}`} style={fileRowStyle}>
+    <div key={path} style={fileRowStyle}>
       <Icon size={16} style={{ color: 'rgba(0,0,0,0.5)', marginRight: 10 }} />
       {isDir ? (
         <>
           <Link to={{ pathname: '/', search: `?p=${encodeURIComponent(path)}` }} style={linkStyle}>{fileName} {fileName === '..' && <span style={{ color: 'rgba(0,0,0,0.3)' }}>(parent dir)</span>}</Link>
           <div style={{ flexGrow: 1 }} />
-          <ZipDownload url={getDownloadUrl(path)} />
+          <ZipDownload url={getDownloadUrl(path)} style={{ marginLeft: 10, marginBottom: -5, }} />
         </>
       ) : (
         <>
           <a style={linkStyle} target="_blank" rel="noopener noreferrer" href={getDownloadUrl(path)}>{fileName}</a>
           <div style={{ flexGrow: 1 }} />
-          <input type="checkbox" className="inputcheckbox" value={`${fileName}`} onChange={handlechange} />
+          {onCheckedChange != null && <input type="checkbox" className="inputcheckbox" checked={checked} onChange={onCheckedChange} />}
           <FileDownload url={getDownloadUrl(path, true)} />
         </>
       )}
@@ -160,7 +154,7 @@ const Browser = () => {
   const [currentDirFiles, setCurrentDirFiles] = useState({ files: [] });
   const [clipboardText, setClipboardText] = useState();
   const [saveAsFile, setSaveAsFile] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedFilesMap, setSelectedFilesMap] = useState({});
 
   const urlSearchParams = useQuery();
   const rootPath = '/'
@@ -182,10 +176,6 @@ const Browser = () => {
     loadCurrentPath();
   }, [loadCurrentPath]);
 
-  useEffect(() => {
-    setSelectedFiles([])
-  }, [window.location.href])
-
   function handleUploadSuccess() {
     if (isInRootDir) loadCurrentPath();
   }
@@ -196,6 +186,8 @@ const Browser = () => {
 
   const dirs = currentDirFiles.files.filter(f => f.isDir);
   const nonDirs = currentDirFiles.files.filter(f => !f.isDir);
+
+  const selectedFiles = Object.entries(selectedFilesMap).flatMap(([key, value]) => (value ? [key] : []));
 
   async function onPaste(e) {
     e.preventDefault();
@@ -231,9 +223,18 @@ const Browser = () => {
     setClipboardText();
   }
 
-  function handleSelectedFiles(e) {
-    let value = e.target.value
-    e.target.checked ? setSelectedFiles(selectedFiles => [...selectedFiles, value]) : setSelectedFiles(selectedFiles => selectedFiles.filter(f => f !== value))
+  function handleFileSelect(path, checked) {
+    if (checked) {
+      setSelectedFilesMap((existing) => ({
+        ...existing,
+        [path]: true,
+      }));
+    } else {
+      setSelectedFilesMap((existing) => {
+        const { [path]: _removed, ...newSelectedFilesMap } = existing;
+        return newSelectedFilesMap;
+      });
+    }
   }
 
 
@@ -286,11 +287,17 @@ const Browser = () => {
       </Section>
 
       <Section>
-      
-      
-      {selectedFiles?.length > 0 ? <ZipFilesDownloadBtn files={selectedFiles} currentDir={currentDirFiles.curRelPath} /> : ""}
-
-        <h2>Download files</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1em' }}>
+          <h2 style={{ marginBottom: 0 }}>Download files</h2>
+          <div style={{ flexGrow: 1 }} />
+          {selectedFiles.length > 0 && (
+            <div>
+              <span style={{ marginRight: '.2em' }}>{selectedFiles.length} selected</span>
+              <input type="checkbox" checked onChange={() => setSelectedFilesMap({})} style={{ marginRight: '1em' }} />
+              <ZipDownload url={`/api/zip-files?files=${encodeURIComponent(JSON.stringify(selectedFiles))}&_=${new Date().getTime()}`} title="Download as ZIP" />
+            </div>
+          )}
+        </div>
 
         <div style={{ wordBreak: 'break-all', padding: '0 5px 8px 5px', fontSize: '.85em', color: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FaShareAlt size={10} style={{ marginRight: 10 }} />
@@ -301,11 +308,14 @@ const Browser = () => {
 
         <div style={{ ...fileRowStyle }}>
           <div style={{ wordBreak: 'break-all', fontWeight: 500 }}>{currentDirFiles.curRelPath} <span style={{ color: 'rgba(0,0,0,0.3)' }}>(current dir)</span></div>
-          <ZipDownload url={getDownloadUrl(currentDirFiles.curRelPath)} />
+          <ZipDownload url={getDownloadUrl(currentDirFiles.curRelPath)} style={{ marginLeft: 10, marginBottom: -5,  }} />
         </div>
 
         {dirs.map(FileRow)}
-        {nonDirs.filter((el) => el.handlechange = handleSelectedFiles).map(FileRow)}
+        {nonDirs.map((props) => {
+          const { path } = props;
+          return <FileRow key={path} {...props} checked={selectedFilesMap[path]} onCheckedChange={(e) => handleFileSelect(path, e.target.checked)} />;
+        })}
       </Section>
 
       {/* eslint-disable-next-line jsx-a11y/accessible-emoji */}
