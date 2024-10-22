@@ -68,7 +68,7 @@ const Uploader = ({ onUploadSuccess }) => {
         setUploadProgress(0);
         const data = new FormData();
         acceptedFiles.forEach((file) => data.append('files', file));
-    
+
         function onUploadProgress(progressEvent) {
           dataTotal = progressEvent.total;
           dataLoaded = progressEvent.loaded;
@@ -100,16 +100,16 @@ const Uploader = ({ onUploadSuccess }) => {
     const percentage = Math.round(uploadProgress * 100);
     return (
       <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-      <div style={{ width: 100 }}>
-        <CircularProgressbar value={percentage} text={`${percentage}%`} />
+        <div style={{ width: 100 }}>
+          <CircularProgressbar value={percentage} text={`${percentage}%`} />
+        </div>
+        {uploadSpeed && <div>{(uploadSpeed / 1e6).toFixed(2)}MB/s</div>}
       </div>
-      {uploadSpeed && <div>{(uploadSpeed / 1e6).toFixed(2)}MB/s</div>}
-    </div>
     );
   }
 
   return (
-    <div {...getRootProps()} style={{ outline: 'none',  background: boxBackgroundColor, cursor: 'pointer', padding: '30px 0', border: `3px dashed ${isDragActive ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+    <div {...getRootProps()} style={{ outline: 'none', background: boxBackgroundColor, cursor: 'pointer', padding: '30px 0', border: `3px dashed ${isDragActive ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
       <input {...getInputProps()} />
 
       <FaFileUpload size={50} style={{ color: iconColor }} />
@@ -124,24 +124,25 @@ const Uploader = ({ onUploadSuccess }) => {
 const getDownloadUrl = (path, forceDownload) => `/api/download?f=${encodeURIComponent(path)}&forceDownload=${forceDownload ? 'true' : 'false'}&_=${new Date().getTime()}`;
 
 const FileDownload = ({ url }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink }} href={url} title="Download file"><FaFileDownload size={22} /></a>;
-const ZipDownload = ({ url }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink2 }} href={url} title="Download folder as ZIP"><FaFileArchive size={22} /></a>;
+const ZipDownload = ({ url, title = "Download folder as ZIP", style }) => <a style={{ textDecoration: 'none', color: colorLink2, verticalAlign: 'middle', ...style }} href={url} title={title}><FaFileArchive size={22} /></a>;
 
-const FileRow = ({ path, isDir, fileName }) => {
+const FileRow = ({ path, isDir, fileName, onCheckedChange, checked }) => {
   const Icon = isDir ? FaFolder : FaFileAlt;
 
   return (
-    <div key={`${path}_${fileName}`} style={fileRowStyle}>
+    <div key={path} style={fileRowStyle}>
       <Icon size={16} style={{ color: 'rgba(0,0,0,0.5)', marginRight: 10 }} />
       {isDir ? (
         <>
-          <Link to={{ pathname: '/', search: `?p=${encodeURIComponent(path)}`}} style={linkStyle}>{fileName} {fileName === '..' && <span style={{ color: 'rgba(0,0,0,0.3)' }}>(parent dir)</span>}</Link>
+          <Link to={{ pathname: '/', search: `?p=${encodeURIComponent(path)}` }} style={linkStyle}>{fileName} {fileName === '..' && <span style={{ color: 'rgba(0,0,0,0.3)' }}>(parent dir)</span>}</Link>
           <div style={{ flexGrow: 1 }} />
-          <ZipDownload url={getDownloadUrl(path)} />
+          <ZipDownload url={getDownloadUrl(path)} style={{ marginLeft: 10, marginBottom: -5, }} />
         </>
       ) : (
         <>
           <a style={linkStyle} target="_blank" rel="noopener noreferrer" href={getDownloadUrl(path)}>{fileName}</a>
           <div style={{ flexGrow: 1 }} />
+          {onCheckedChange != null && <input type="checkbox" className="inputcheckbox" checked={checked} onChange={onCheckedChange} />}
           <FileDownload url={getDownloadUrl(path, true)} />
         </>
       )}
@@ -153,6 +154,7 @@ const Browser = () => {
   const [currentDirFiles, setCurrentDirFiles] = useState({ files: [] });
   const [clipboardText, setClipboardText] = useState();
   const [saveAsFile, setSaveAsFile] = useState(false);
+  const [selectedFilesMap, setSelectedFilesMap] = useState({});
 
   const urlSearchParams = useQuery();
   const rootPath = '/'
@@ -163,7 +165,7 @@ const Browser = () => {
 
   const loadCurrentPath = useCallback(async () => {
     try {
-      const response = await axios.get('/api/browse', { params: { p: currentPath} });
+      const response = await axios.get('/api/browse', { params: { p: currentPath } });
       setCurrentDirFiles(response.data);
     } catch (err) {
       console.error(err);
@@ -184,6 +186,8 @@ const Browser = () => {
 
   const dirs = currentDirFiles.files.filter(f => f.isDir);
   const nonDirs = currentDirFiles.files.filter(f => !f.isDir);
+
+  const selectedFiles = Object.entries(selectedFilesMap).flatMap(([key, value]) => (value ? [key] : []));
 
   async function onPaste(e) {
     e.preventDefault();
@@ -218,6 +222,21 @@ const Browser = () => {
     Toast.fire({ icon: 'success', title: 'Text has been copied from the other side\'s clipboard' });
     setClipboardText();
   }
+
+  function handleFileSelect(path, checked) {
+    if (checked) {
+      setSelectedFilesMap((existing) => ({
+        ...existing,
+        [path]: true,
+      }));
+    } else {
+      setSelectedFilesMap((existing) => {
+        const { [path]: _removed, ...newSelectedFilesMap } = existing;
+        return newSelectedFilesMap;
+      });
+    }
+  }
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -268,7 +287,17 @@ const Browser = () => {
       </Section>
 
       <Section>
-        <h2>Download files</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1em' }}>
+          <h2 style={{ marginBottom: 0 }}>Download files</h2>
+          <div style={{ flexGrow: 1 }} />
+          {selectedFiles.length > 0 && (
+            <div>
+              <span style={{ marginRight: '.2em' }}>{selectedFiles.length} selected</span>
+              <input type="checkbox" checked onChange={() => setSelectedFilesMap({})} style={{ marginRight: '1em' }} />
+              <ZipDownload url={`/api/zip-files?files=${encodeURIComponent(JSON.stringify(selectedFiles))}&_=${new Date().getTime()}`} title="Download as ZIP" />
+            </div>
+          )}
+        </div>
 
         <div style={{ wordBreak: 'break-all', padding: '0 5px 8px 5px', fontSize: '.85em', color: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FaShareAlt size={10} style={{ marginRight: 10 }} />
@@ -279,11 +308,14 @@ const Browser = () => {
 
         <div style={{ ...fileRowStyle }}>
           <div style={{ wordBreak: 'break-all', fontWeight: 500 }}>{currentDirFiles.curRelPath} <span style={{ color: 'rgba(0,0,0,0.3)' }}>(current dir)</span></div>
-          <ZipDownload url={getDownloadUrl(currentDirFiles.curRelPath)} />
+          <ZipDownload url={getDownloadUrl(currentDirFiles.curRelPath)} style={{ marginLeft: 10, marginBottom: -5,  }} />
         </div>
 
         {dirs.map(FileRow)}
-        {nonDirs.map(FileRow)}
+        {nonDirs.map((props) => {
+          const { path } = props;
+          return <FileRow key={path} {...props} checked={selectedFilesMap[path]} onCheckedChange={(e) => handleFileSelect(path, e.target.checked)} />;
+        })}
       </Section>
 
       {/* eslint-disable-next-line jsx-a11y/accessible-emoji */}

@@ -43,7 +43,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   if (debug) app.use(morgan('dev'));
 
   // NOTE: Must support non latin characters
-  app.post('/api/upload', asyncHandler(async (req, res) => {
+  app.post('/api/upload', bodyParser.json(), asyncHandler(async (req, res) => {
     // console.log(req.headers)
 
     // parse a file upload
@@ -54,7 +54,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       maxFileSize: maxUploadSize,
       maxFields,
     });
-  
+
     form.parse(req, async (err, fields, { files: filesIn }) => {
       if (err) {
         console.error('Upload failed', err);
@@ -75,7 +75,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
             if (!(await fs.pathExists(targetPath))) await fs.rename(file.path, targetPath);
           } catch (err) {
             console.error(`Failed to rename ${file.name}`, err);
-          }  
+          }
         }, { concurrency: 10 });
       }
       res.end();
@@ -96,7 +96,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   app.post('/api/copy', asyncHandler(async (req, res) => {
     res.send(await clipboardy.read());
   }));
-  
+
   async function serveDirZip(filePath, res) {
     const archive = archiver('zip', {
       zlib: { level: zipCompressionLevel },
@@ -157,7 +157,7 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
     const filePath = getFilePath(req.query.f);
     const forceDownload = req.query.forceDownload === 'true';
     const isDir = await isDirectory(filePath);
- 
+
     if (isDir) {
       await serveDirZip(filePath, res);
     } else {
@@ -165,21 +165,21 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       await serveResumableFileDownload({ filePath, range, res, forceDownload });
     }
   }));
-  
+
 
   app.get('/api/browse', asyncHandler(async (req, res) => {
     const curRelPath = req.query.p || '/';
     const curAbsPath = getFilePath(curRelPath);
 
     let readdirEntries = await fs.readdir(curAbsPath);
-    readdirEntries = readdirEntries.sort(new Intl.Collator(undefined, {numeric: true}).compare);
+    readdirEntries = readdirEntries.sort(new Intl.Collator(undefined, { numeric: true }).compare);
 
     const entries = (await pMap(readdirEntries, async (entry) => {
       try {
         const fileAbsPath = join(curAbsPath, entry); // TODO what if a file called ".."
         const fileRelPath = join(curRelPath, entry);
         const isDir = await isDirectory(fileAbsPath);
-  
+
         return {
           path: fileRelPath,
           isDir,
@@ -201,6 +201,39 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
       sharedPath,
     });
   }));
+
+
+  app.get('/api/zip-files', asyncHandler(async (req, res) => {
+    const zipFileName = `${new Date().toISOString().replace(/^(\d+-\d+-\d+)T(\d+):(\d+):(\d+).*$/, '$1 $2.$3.$3')}.zip`;
+    const { files: filesJson } = req.query;
+
+    const files = JSON.parse(filesJson);
+
+    const archive = archiver('zip', { zlib: { level: zipCompressionLevel } });
+
+    res.writeHead(200, {
+      'Content-Type': 'application/zip',
+      // NOTE: Must support non latin characters
+      'Content-Disposition': contentDisposition(zipFileName),
+    });
+
+    const promise = pipeline(archive, res);
+
+    files.forEach((file) => {
+      const filePath = getFilePath(file);
+      if (fs.existsSync(filePath)) {
+        // Add each file to the archive:
+        archive.file(filePath, { name: file });
+      }
+    });
+
+    archive.finalize();
+
+    await promise;
+  }))
+
+
+
 
   console.log(`Sharing path ${sharedPath}`);
 
@@ -225,5 +258,5 @@ module.exports = ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressio
   else app.use('/', express.static(join(__dirname, 'ezshare-frontend/dist')));
 
   // Default to index because SPA
-  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/dist/index.html')));  
+  app.use('*', (req, res) => res.sendFile(join(__dirname, 'ezshare-frontend/dist/index.html')));
 };
