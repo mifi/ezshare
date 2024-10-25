@@ -5,6 +5,9 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # https://github.com/actions/setup-node/issues/531
+      SKIP_YARN_COREPACK_CHECK: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,6 +20,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      # https://github.com/actions/setup-node/issues/531
+      SKIP_YARN_COREPACK_CHECK: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
