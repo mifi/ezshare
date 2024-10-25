@@ -1,0 +1,9 @@
+{
+  "extends": ["@tsconfig/strictest", "@tsconfig/vite-react/tsconfig.json"],
+  "compilerOptions": {
+    "types": ["vite-plugin-svgr/client"],
+  },
+  "include": [
+    "src/**/*",
+  ],
+}

@@ -3,59 +3,36 @@ name: Build/release
 on: [push, pull_request]
 
 jobs:
-  release:
+  test:
     runs-on: ubuntu-latest
-
-    env:
-      # https://github.com/actions/setup-node/issues/531
-      SKIP_YARN_COREPACK_CHECK: true
-
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js, NPM and Yarn
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
-
-      - name: Install pkg
-        run: npm i -g pkg
-
-      - name: Frontend yarn
-        run: cd ezshare-frontend && yarn
-
-      - run: yarn
-
+      - run: yarn --immutable
+      - run: cd frontend && yarn --immutable
+      - run: yarn tsc
       - run: yarn lint
 
-      - name: Build
-        run: yarn build
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-      - name: Patch
-        run: patch -p1 < standalone.patch
+      - run: yarn --immutable
+      - run: cd frontend && yarn --immutable
+      - run: yarn tsc
+      - run: yarn lint
+      - run: yarn build
+      - run: yarn build:frontend
+      - run: patch -p1 < standalone.patch
+      - run: ./pkg.sh
 
-      - name: Run pkg
-        run: |
-          mkdir win macos linux
-          mkdir win/ezshare linux/ezshare
-          mv node_modules/clipboardy/fallbacks/windows/clipboard_x86_64.exe win/ezshare/clipboard.exe
-          mv node_modules/clipboardy/fallbacks/linux/xsel linux/ezshare/clipboard
-          rm -r node_modules/clipboardy/fallbacks
-          pkg .
-          mv ezshare-win.exe win/ezshare/ezshare.exe
-          mv ezshare-linux linux/ezshare/ezshare
-          mv ezshare-macos macos/ezshare
-          cd win
-          zip -r ../ezshare-win.zip ezshare
-          cd ..
-          cd macos
-          zip ../ezshare-macos.zip ezshare
-          cd ..
-          cd linux
-          zip -r ../ezshare-linux.zip ezshare
-
-      - name: (Windows) Upload artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: Binaries

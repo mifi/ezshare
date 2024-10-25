@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import Formidable from 'formidable';
 import { createReadStream } from 'node:fs';
 import { join, basename } from 'node:path';
@@ -9,31 +9,32 @@ import asyncHandler from 'express-async-handler';
 import archiver from 'archiver';
 import pMap from 'p-map';
 import os from 'node:os';
-import flatMap from 'lodash/flatMap.js';
 import contentDisposition from 'content-disposition';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import qrcode from 'qrcode-terminal';
 import clipboardy from 'clipboardy';
 import bodyParser from 'body-parser';
 import filenamify from 'filenamify';
-import util from 'node:util';
-import stream from 'node:stream';
+import stream from 'node:stream/promises';
 import parseRange from 'range-parser';
-import { fileURLToPath } from 'node:url';
 
-
-const pipeline = util.promisify(stream.pipeline);
 
 const maxFields = 1000;
 const debug = false;
 
-const pathExists = (path) => fs.access(path, fs.constants.F_OK).then(() => true).catch(() => false);
+const pathExists = (path: string) => fs.access(path, fs.constants.F_OK).then(() => true).catch(() => false);
 
-export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }) => {
+export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }: {
+  sharedPath: string | undefined,
+  port: number,
+  maxUploadSize: number,
+  zipCompressionLevel: number,
+  devMode: boolean,
+}) => {
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
   const sharedPath = sharedPathIn || process.cwd();
 
-  async function getFileAbsPath(relPath) {
+  async function getFileAbsPath(relPath: string | undefined) {
     if (relPath == null) return sharedPath;
     const absPath = join(sharedPath, join('/', relPath));
     const realPath = await fs.realpath(absPath);
@@ -48,7 +49,8 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   // NOTE: Must support non latin characters
   app.post('/api/upload', bodyParser.json(), asyncHandler(async (req, res) => {
     // console.log(req.headers)
-    const uploadDirPathIn = req.query.path || '/';
+    const uploadDirPathIn = req.query['path'] || '/';
+    assert(typeof uploadDirPathIn === 'string');
 
     const uploadDirPath = await getFileAbsPath(uploadDirPathIn);
 
@@ -60,7 +62,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
       maxFields,
     });
 
-    form.parse(req, async (err, fields, { files: filesIn }) => {
+    form.parse(req, async (err, _fields, { files: filesIn }) => {
       if (err) {
         console.error('Upload failed', err);
         res.status(400).send({ error: { message: err.message } });
@@ -76,7 +78,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
 
         await pMap(files, async (file) => {
           try {
-            const targetPath = join(uploadDirPath, filenamify(file.originalFilename, { maxLength: 255 }));
+            const targetPath = join(uploadDirPath, filenamify(file.originalFilename ?? 'file', { maxLength: 255 }));
             if (!(await pathExists(targetPath))) await fs.rename(file.filepath, targetPath); // to prevent overwrites
           } catch (err2) {
             console.error(`Failed to rename ${file.originalFilename}`, err2);
@@ -99,11 +101,11 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   }));
 
   // NOTE: Must support non latin characters
-  app.post('/api/copy', asyncHandler(async (req, res) => {
+  app.post('/api/copy', asyncHandler(async (_req, res) => {
     res.send(await clipboardy.read());
   }));
 
-  async function serveDirZip(filePath, res) {
+  async function serveDirZip(filePath: string, res: Response) {
     const archive = archiver('zip', {
       zlib: { level: zipCompressionLevel },
     });
@@ -114,7 +116,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
       'Content-disposition': contentDisposition(`${basename(filePath)}.zip`),
     });
 
-    const promise = pipeline(archive, res);
+    const promise = stream.pipeline(archive, res);
 
     archive.directory(filePath, basename(filePath));
     archive.finalize();
@@ -122,7 +124,12 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
     await promise;
   }
 
-  async function serveResumableFileDownload({ filePath, range, res, forceDownload }) {
+  async function serveResumableFileDownload({ filePath, range, res, forceDownload }: {
+    filePath: string,
+    range: string | undefined,
+    res: Response,
+    forceDownload: boolean,
+  }) {
     if (forceDownload) {
       // Set the filename in the Content-disposition header
       res.set('Content-disposition', contentDisposition(basename(filePath)));
@@ -132,10 +139,11 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
 
     if (range) {
       const subranges = parseRange(fileSize, range);
+      assert(typeof subranges !== 'number');
       if (subranges.type !== 'bytes') throw new Error(`Invalid range type ${subranges.type}`);
 
       if (subranges.length !== 1) throw new Error('Only a single range is supported');
-      const [{ start, end }] = subranges;
+      const { start, end } = subranges[0]!;
 
       const contentLength = (end - start) + 1;
 
@@ -147,7 +155,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
         'Content-Type': 'application/octet-stream',
       });
 
-      await pipeline(createReadStream(filePath, { start, end }), res);
+      await stream.pipeline(createReadStream(filePath, { start, end }), res);
     } else {
       // Standard download without resuming
       res.set({
@@ -155,13 +163,15 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
         'Content-Length': fileSize,
       });
 
-      await pipeline(createReadStream(filePath), res);
+      await stream.pipeline(createReadStream(filePath), res);
     }
   }
 
   app.get('/api/download', asyncHandler(async (req, res) => {
-    const filePath = await getFileAbsPath(req.query.f);
-    const forceDownload = req.query.forceDownload === 'true';
+    const { f } = req.query;
+    assert(typeof f === 'string');
+    const filePath = await getFileAbsPath(f);
+    const forceDownload = req.query['forceDownload'] === 'true';
 
     const lstat = await fs.lstat(filePath);
     if (lstat.isDirectory()) {
@@ -173,7 +183,8 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   }));
 
   app.get('/api/browse', asyncHandler(async (req, res) => {
-    const browseRelPath = req.query.p || '/';
+    const browseRelPath = req.query['p'] || '/';
+    assert(typeof browseRelPath === 'string');
     const browseAbsPath = await getFileAbsPath(browseRelPath);
 
     let readdirEntries = await fs.readdir(browseAbsPath, { withFileTypes: true });
@@ -200,7 +211,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
           fileName: entry.name,
         }];
       } catch (err) {
-        console.warn(err.message);
+        console.warn((err as Error).message);
         // https://github.com/mifi/ezshare/issues/29
         return [];
       }
@@ -220,8 +231,10 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   app.get('/api/zip-files', asyncHandler(async (req, res) => {
     const zipFileName = `${new Date().toISOString().replace(/^(\d+-\d+-\d+)T(\d+):(\d+):(\d+).*$/, '$1 $2.$3.$3')}.zip`;
     const { files: filesJson } = req.query;
+    assert(typeof filesJson === 'string');
 
-    const files = JSON.parse(filesJson);
+    const files = JSON.parse(filesJson) as unknown;
+    assert(Array.isArray(files));
 
     const archive = archiver('zip', { zlib: { level: zipCompressionLevel } });
 
@@ -231,9 +244,10 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
       'Content-Disposition': contentDisposition(zipFileName),
     });
 
-    const promise = pipeline(archive, res);
+    const promise = stream.pipeline(archive, res);
 
-    await pMap(files, async (file) => {
+    await pMap(files, async (file: unknown) => {
+      assert(typeof file === 'string');
       const absPath = await getFileAbsPath(file);
       // Add each file to the archive:
       archive.file(absPath, { name: file });
@@ -249,7 +263,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
 
   app.listen(port, () => {
     const interfaces = os.networkInterfaces();
-    const urls = flatMap(Object.values(interfaces), (addresses) => addresses).filter(({ family, address }) => family === 'IPv4' && address !== '127.0.0.1').map(({ address }) => `http://${address}:${port}/`);
+    const urls = Object.values(interfaces).flatMap((addresses) => (addresses != null ? addresses : [])).filter(({ family, address }) => family === 'IPv4' && address !== '127.0.0.1').map(({ address }) => `http://${address}:${port}/`);
     if (urls.length === 0) return;
     console.log('Server listening:');
     urls.forEach((url) => {
@@ -265,8 +279,8 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
 
   // Serving the frontend depending on dev/production
   if (devMode) app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
-  else app.use('/', express.static(fileURLToPath(new URL('ezshare-frontend/dist', import.meta.url))));
+  else app.use('/', express.static(join(__dirname, '../frontend/dist')));
 
   // Default to index because SPA
-  app.use('*', (req, res) => res.sendFile(fileURLToPath(new URL('ezshare-frontend/dist/index.html', import.meta.url))));
+  app.use('*', (_req, res) => res.sendFile(join(__dirname, '../frontend/dist/index.html')));
 };

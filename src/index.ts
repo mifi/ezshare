@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import meow from 'meow';
+import yargs from 'yargs/yargs';
 import assert from 'node:assert';
 
 import app from './app.js';
 
-const cli = meow(`
+
+const usage = `
   Usage
     $ ezshare [shared_path]
 
@@ -20,26 +21,26 @@ const cli = meow(`
 
     $ ezshare /Users/me
     Shares all files and folders under /Users/me
-`, {
-  importMeta: import.meta,
-  flags: {
-    devMode: { type: 'boolean' },
-  },
-});
+`;
 
-const port = cli.flags.port ? parseInt(cli.flags.port, 10) : undefined;
-const maxUploadSize = cli.flags.maxUploadSize ? parseInt(cli.flags.maxUploadSize, 10) : undefined;
-const zipCompressionLevel = cli.flags.zipCompressionLevel ? parseInt(cli.flags.zipCompressionLevel, 10) : undefined;
-const devMode = !!cli.flags.devMode;
+const { port, maxUploadSize, zipCompressionLevel, devMode, _ } = yargs(process.argv.slice(2)).usage(usage).options({
+  devMode: { type: 'boolean', default: false },
+  port: { type: 'number', default: 8080 },
+  maxUploadSize: { type: 'number', default: 16 * 1024 * 1024 * 1024 },
+  zipCompressionLevel: { type: 'number', default: 0 },
+}).parseSync();
 
 if (zipCompressionLevel != null) {
   assert(zipCompressionLevel <= 9 && zipCompressionLevel >= 0, 'zip-compression-level must be between 0 and 9');
 }
 
+const sharedPath = _[0];
+assert(typeof sharedPath === 'string' || sharedPath == null);
+
 app({
-  sharedPath: cli.input[0],
-  port: port || 8080,
-  maxUploadSize: maxUploadSize || (16 * 1024 * 1024 * 1024),
-  zipCompressionLevel: zipCompressionLevel != null ? zipCompressionLevel : 0,
+  sharedPath,
+  port,
+  maxUploadSize,
+  zipCompressionLevel,
   devMode,
 });

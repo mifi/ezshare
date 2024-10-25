@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useCallback, ReactNode, CSSProperties, ChangeEventHandler, ClipboardEvent } from 'react';
+import axios, { AxiosError } from 'axios';
 
 import { Route } from 'react-router';
 import { Switch, useLocation, Link } from 'react-router-dom';
@@ -32,7 +32,7 @@ const boxBackgroundColor = '#fff';
 const headingBackgroundColor = '#16697a';
 const iconColor = '#ffa62b'; // 'rgba(0,0,0,0.3)'
 
-const linkStyle = {
+const linkStyle: CSSProperties = {
   color: 'rgba(0,0,0,0.9)',
   minWidth: 50,
   textDecoration: 'none',
@@ -41,17 +41,20 @@ const linkStyle = {
 
 const fileRowStyle = { borderTop: '1px solid #d1cebd', margin: '4px 0', padding: '4px 0 2px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 
-const Section = ({ children, style }) => (
+const Section = ({ children, style }: { children: ReactNode, style?: CSSProperties }) => (
   <div style={{ boxSizing: 'border-box', width: '100%', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', marginBottom: 40, borderRadius: 5, ...style }}>
     {children}
   </div>
 );
 
-const Uploader = ({ onUploadSuccess, cwd }) => {
-  const [uploadProgress, setUploadProgress] = useState();
-  const [uploadSpeed, setUploadSpeed] = useState();
+const Uploader = ({ onUploadSuccess, cwd }: {
+  onUploadSuccess: () => void,
+  cwd: string,
+}) => {
+  const [uploadProgress, setUploadProgress] = useState<number>();
+  const [uploadSpeed, setUploadSpeed] = useState<number>();
 
-  const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: File[]) => {
     // console.log(acceptedFiles);
 
     if (rejectedFiles && rejectedFiles.length > 0) {
@@ -59,9 +62,9 @@ const Uploader = ({ onUploadSuccess, cwd }) => {
     }
 
     async function upload() {
-      let dataTotal;
-      let dataLoaded;
-      let startTime;
+      let dataTotal: number;
+      let dataLoaded: number;
+      let startTime: number;
 
       try {
         // Toast.fire({ title: `${acceptedFiles.length} ${rejectedFiles.length}` });
@@ -69,7 +72,7 @@ const Uploader = ({ onUploadSuccess, cwd }) => {
         const data = new FormData();
         acceptedFiles.forEach((file) => data.append('files', file));
 
-        const onUploadProgress = (progressEvent) => {
+        const onUploadProgress = (progressEvent: ProgressEvent) => {
           dataTotal = progressEvent.total;
           dataLoaded = progressEvent.loaded;
           if (!startTime && dataLoaded) startTime = Date.now();
@@ -83,11 +86,11 @@ const Uploader = ({ onUploadSuccess, cwd }) => {
         onUploadSuccess();
       } catch (err) {
         console.error('Upload failed', err);
-        const message = err.response?.data?.error?.message || err.message;
+        const message = (err instanceof AxiosError && err.response?.data.error.message) || (err as Error).message;
         Toast.fire({ icon: 'error', title: `Upload failed: ${message}` });
       } finally {
-        setUploadProgress();
-        setUploadSpeed();
+        setUploadProgress(undefined);
+        setUploadSpeed(undefined);
       }
     }
 
@@ -101,6 +104,7 @@ const Uploader = ({ onUploadSuccess, cwd }) => {
     return (
       <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
         <div style={{ width: 100 }}>
+          {/* @ts-expect-error todo */}
           <CircularProgressbar value={percentage} text={`${percentage}%`} />
         </div>
         {uploadSpeed && <div>{(uploadSpeed / 1e6).toFixed(2)}MB/s</div>}
@@ -123,12 +127,18 @@ const Uploader = ({ onUploadSuccess, cwd }) => {
   );
 };
 
-const getDownloadUrl = (path, forceDownload) => `/api/download?f=${encodeURIComponent(path)}&forceDownload=${forceDownload ? 'true' : 'false'}&_=${Date.now()}`;
+const getDownloadUrl = (path: string, forceDownload?: boolean) => `/api/download?f=${encodeURIComponent(path)}&forceDownload=${forceDownload ? 'true' : 'false'}&_=${Date.now()}`;
 
-const FileDownload = ({ url }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink }} href={url} title="Download file"><FaFileDownload size={22} /></a>;
-const ZipDownload = ({ url, title = 'Download folder as ZIP', style }) => <a style={{ textDecoration: 'none', color: colorLink2, verticalAlign: 'middle', ...style }} href={url} title={title}><FaFileArchive size={22} /></a>;
+const FileDownload = ({ url }: { url: string }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink }} href={url} title="Download file"><FaFileDownload size={22} /></a>;
+const ZipDownload = ({ url, title = 'Download folder as ZIP', style }: { url: string, title?: string, style?: CSSProperties }) => <a style={{ textDecoration: 'none', color: colorLink2, verticalAlign: 'middle', ...style }} href={url} title={title}><FaFileArchive size={22} /></a>;
 
-const FileRow = ({ path, isDir, fileName, onCheckedChange, checked }) => {
+const FileRow = ({ path, isDir, fileName, onCheckedChange, checked }: {
+  path: string,
+  isDir: boolean,
+  fileName: string,
+  onCheckedChange?: ChangeEventHandler<HTMLInputElement>,
+  checked?: boolean | undefined,
+}) => {
   const Icon = isDir ? FaFolder : FaFileAlt;
 
   return (
@@ -153,10 +163,10 @@ const FileRow = ({ path, isDir, fileName, onCheckedChange, checked }) => {
 };
 
 const Browser = () => {
-  const [currentDirFiles, setCurrentDirFiles] = useState({ files: [] });
+  const [currentDirFiles, setCurrentDirFiles] = useState<{ sharedPath?: string, files: { path: string, isDir: boolean, fileName: string }[], cwd: string }>({ files: [], cwd: '/' });
   const [clipboardText, setClipboardText] = useState();
   const [saveAsFile, setSaveAsFile] = useState(false);
-  const [selectedFilesMap, setSelectedFilesMap] = useState({});
+  const [selectedFilesMap, setSelectedFilesMap] = useState<Record<string, boolean>>({});
 
   const urlSearchParams = useQuery();
   const rootPath = '/';
@@ -191,15 +201,16 @@ const Browser = () => {
 
   const selectedFiles = Object.entries(selectedFilesMap).flatMap(([key, value]) => (value ? [key] : []));
 
-  async function onPaste(e) {
+  async function onPaste(e: ClipboardEvent<HTMLInputElement>) {
     e.preventDefault();
+    // @ts-expect-error todo
     e.target.blur();
 
     try {
       const clipboardData = e.clipboardData.getData('Text');
       const data = new URLSearchParams();
       data.append('clipboard', clipboardData);
-      data.append('saveAsFile', saveAsFile);
+      data.append('saveAsFile', String(saveAsFile));
       await axios.post('/api/paste', data);
       loadCurrentPath();
 
@@ -223,10 +234,10 @@ const Browser = () => {
 
   const onClipboardCopySuccess = useCallback(() => {
     Toast.fire({ icon: 'success', title: 'Text has been copied from the other side\'s clipboard' });
-    setClipboardText();
+    setClipboardText(undefined);
   }, []);
 
-  function handleFileSelect(path, checked) {
+  function handleFileSelect(path: string, checked: boolean) {
     if (checked) {
       setSelectedFilesMap((existing) => ({
         ...existing,
@@ -273,10 +284,11 @@ const Browser = () => {
                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', alignSelf: 'stretch', background: 'rgba(0,0,0,0.04)', borderRadius: 5, padding: 5, margin: '10px 0', textAlign: 'center', boxSizing: 'border-box' }}>{clipboardText}</div>
 
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                  {/* @ts-expect-error todo */}
                   <Clipboard data-clipboard-text={clipboardText} onSuccess={onClipboardCopySuccess} style={{ padding: 5, flexGrow: 1 }}>
                     Copy to clipboard
                   </Clipboard>
-                  <button onClick={() => setClipboardText()} type="button" style={{ padding: 5, flexGrow: 1 }}>Cancel</button>
+                  <button onClick={() => setClipboardText(undefined)} type="button" style={{ padding: 5, flexGrow: 1 }}>Cancel</button>
                 </div>
               </motion.div>
             ) : (

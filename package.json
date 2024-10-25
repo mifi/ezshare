@@ -1,30 +1,31 @@
 {
   "name": "ezshare",
   "version": "1.11.1",
-  "description": "Easily share files over LAN",
-  "main": "index.js",
+  "description": "Easily share files over a local network",
+  "main": "dist/index.js",
   "repository": "https://github.com/mifi/ezshare",
   "author": "Mikael Finstad <finstaden@gmail.com>",
   "license": "MIT",
-  "type": "module",
   "engines": {
     "node": ">=18"
   },
-  "bin": "index.js",
+  "bin": "dist/index.js",
   "scripts": {
     "lint": "eslint .",
     "test": "exit 0",
-    "build": "cd ezshare-frontend && npm run build",
+    "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --format=cjs --sourcemap=inline",
+    "build:frontend": "cd frontend && yarn build",
+    "watch": "yarn build --watch",
     "prepack": "npm run build",
-    "start": "concurrently -k \"cd ezshare-frontend && yarn start\" \"node --watch . --dev-mode\""
+    "dev": "concurrently -k \"cd frontend && yarn dev\" \"yarn watch\" \"node --enable-source-maps --watch . --dev-mode\""
   },
   "files": [
-    "/ezshare-frontend/dist/**",
-    "app.js"
+    "/frontend/dist/**",
+    "/dist/**"
   ],
   "pkg": {
     "assets": [
-      "ezshare-frontend/dist/**"
+      "frontend/dist/**"
     ]
   },
   "dependencies": {
@@ -39,16 +40,29 @@
     "fs-extra": "^8.1.0",
     "http-proxy-middleware": "^1.0.3",
     "lodash": "^4.17.15",
-    "meow": "^13.2.0",
     "morgan": "^1.9.1",
     "p-map": "^4.0.0",
     "qrcode-terminal": "^0.12.0",
-    "range-parser": "^1.2.1"
+    "range-parser": "^1.2.1",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
+    "@tsconfig/node18": "^18.2.4",
+    "@tsconfig/strictest": "^2.0.5",
+    "@tsconfig/vite-react": "^3.0.2",
+    "@types/archiver": "3",
+    "@types/content-disposition": "^0.5.8",
+    "@types/express": "4",
+    "@types/formidable": "3",
+    "@types/lodash": "^4.17.12",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "18",
+    "@types/qrcode-terminal": "^0.12.2",
+    "@types/yargs": "^17.0.33",
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "concurrently": "^5.1.0",
+    "esbuild": "^0.24.0",
     "eslint": "^8.2.0",
     "eslint-config-mifi": "^0.0.6",
     "eslint-plugin-import": "^2.25.3",
@@ -56,7 +70,8 @@
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^4.3.0",
     "eslint-plugin-unicorn": "^51.0.1",
-    "typescript": "~5.3.0"
+    "pkg": "^5.8.1",
+    "typescript": "^5.6.3"
   },
   "packageManager": "yarn@4.5.1"
 }
