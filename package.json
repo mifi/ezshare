@@ -38,7 +38,7 @@
     "filenamify": "^4.2.0",
     "formidable": "^3.5.2",
     "fs-extra": "^8.1.0",
-    "http-proxy-middleware": "^1.0.3",
+    "http-proxy-middleware": "^3.0.3",
     "lodash": "^4.17.15",
     "morgan": "^1.9.1",
     "p-map": "^4.0.0",
