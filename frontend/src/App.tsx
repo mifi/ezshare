@@ -132,12 +132,38 @@ const getDownloadUrl = (path: string, forceDownload?: boolean) => `/api/download
 const FileDownload = ({ url }: { url: string }) => <a style={{ textDecoration: 'none', marginLeft: 10, marginBottom: -5, color: colorLink }} href={url} title="Download file"><FaFileDownload size={22} /></a>;
 const ZipDownload = ({ url, title = 'Download folder as ZIP', style }: { url: string, title?: string, style?: CSSProperties }) => <a style={{ textDecoration: 'none', color: colorLink2, verticalAlign: 'middle', ...style }} href={url} title={title}><FaFileArchive size={22} /></a>;
 
+let sizeCounter: number = 0;
+
+const sizeMeter: { [key: number]: string } = {
+  0: 'KB',
+  1: 'MB',
+  2: 'GB',
+  3: 'TB'
+};
+
+// Format the byte
+const manageByte = (num: number): string | number => {
+  if (!num) return 0;
+  let res: number = num / 1024;
+
+  if (res > 1000) {
+    sizeCounter++;
+    return manageByte(res);
+  } else {
+    const value: number = sizeCounter;
+    sizeCounter = 0;
+    return res.toFixed(2) + sizeMeter[value];
+  }
+}
+
+
 const FileRow = ({ path, isDir, fileName, onCheckedChange, checked }: {
   path: string,
   isDir: boolean,
   fileName: string,
   onCheckedChange?: ChangeEventHandler<HTMLInputElement>,
   checked?: boolean | undefined,
+  size?: number | undefined,
 }) => {
   const Icon = isDir ? FaFolder : FaFileAlt;
 
@@ -148,12 +174,14 @@ const FileRow = ({ path, isDir, fileName, onCheckedChange, checked }: {
         <>
           <Link to={{ pathname: '/', search: `?p=${encodeURIComponent(path)}` }} style={linkStyle}>{fileName} {fileName === '..' && <span style={{ color: 'rgba(0,0,0,0.3)' }}>(parent dir)</span>}</Link>
           <div style={{ flexGrow: 1 }} />
+          <span style={{ marginRight: '.2em' }} > {size && manageByte(size)} </span>
           <ZipDownload url={getDownloadUrl(path)} style={{ marginLeft: 10, marginBottom: -5 }} />
         </>
       ) : (
         <>
           <a style={linkStyle} target="_blank" rel="noopener noreferrer" href={getDownloadUrl(path)}>{fileName}</a>
           <div style={{ flexGrow: 1 }} />
+          <span style={{ marginRight: '.2em' }} > {size && manageByte(size)} </span>
           {onCheckedChange != null && <input type="checkbox" className="inputcheckbox" checked={checked} onChange={onCheckedChange} />}
           <FileDownload url={getDownloadUrl(path, true)} />
         </>
@@ -179,6 +207,8 @@ const Browser = () => {
     try {
       const response = await axios.get('/api/browse', { params: { p: currentPath } });
       setCurrentDirFiles(response.data);
+      let responseWithSize = await axios.get('/api/browse-withsize', { params: { p: currentPath } });
+      setCurrentDirFiles(responseWithSize.data);
     } catch (err) {
       console.error(err);
     }
