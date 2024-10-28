@@ -17,7 +17,7 @@
     "build:frontend": "cd frontend && yarn build",
     "watch": "yarn build --watch",
     "prepack": "npm run build",
-    "dev": "concurrently -k \"cd frontend && yarn dev\" \"yarn watch\" \"node --enable-source-maps --watch . --dev-mode\""
+    "dev": "yarn build && concurrently -k \"cd frontend && yarn dev\" \"yarn watch\" \"node --enable-source-maps --watch . --dev-mode\""
   },
   "files": [
     "/frontend/dist/**",
