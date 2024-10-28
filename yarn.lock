@@ -2444,6 +2444,7 @@ __metadata:
     formidable: "npm:^3.5.2"
     fs-extra: "npm:^8.1.0"
     http-proxy-middleware: "npm:^3.0.3"
+    is-path-inside: "npm:^4.0.0"
     lodash: "npm:^4.17.15"
     morgan: "npm:^1.9.1"
     p-map: "npm:^4.0.0"
@@ -3277,6 +3278,13 @@ __metadata:
   version: 3.0.3
   resolution: "is-path-inside@npm:3.0.3"
   checksum: 10c0/cf7d4ac35fb96bab6a1d2c3598fe5ebb29aafb52c0aaa482b5a3ed9d8ba3edc11631e3ec2637660c44b3ce0e61a08d54946e8af30dec0b60a7c27296c68ffd05
+  languageName: node
+  linkType: hard
+
+"is-path-inside@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "is-path-inside@npm:4.0.0"
+  checksum: 10c0/51188d7e2b1d907a9a5f7c18d99a90b60870b951ed87cf97595d9aaa429d4c010652c3350bcbf31182e7f4b0eab9a1860b43e16729b13cb1a44baaa6cdb64c46
   languageName: node
   linkType: hard
 

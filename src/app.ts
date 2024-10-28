@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
 import Formidable from 'formidable';
 import { createReadStream } from 'node:fs';
-import { join, basename } from 'node:path';
+import { join, basename, relative } from 'node:path';
 import assert from 'node:assert';
 import * as fs from 'node:fs/promises';
 import morgan from 'morgan';
@@ -17,6 +17,8 @@ import bodyParser from 'body-parser';
 import filenamify from 'filenamify';
 import stream from 'node:stream/promises';
 import parseRange from 'range-parser';
+// @ts-expect-error dunno
+import isPathInside from 'is-path-inside';
 
 
 const maxFields = 1000;
@@ -34,11 +36,15 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
   const sharedPath = sharedPathIn || process.cwd();
 
+  function arePathsEqual(path1: string, path2: string) {
+    return relative(path1, path2) === '';
+  }
+
   async function getFileAbsPath(relPath: string | undefined) {
     if (relPath == null) return sharedPath;
     const absPath = join(sharedPath, join('/', relPath));
     const realPath = await fs.realpath(absPath);
-    assert(realPath.startsWith(sharedPath), 'Path must be within shared path');
+    assert(isPathInside(realPath, sharedPath) || arePathsEqual(realPath, sharedPath), `Path must be within shared path ${realPath} ${sharedPath}`);
     return realPath;
   }
 
