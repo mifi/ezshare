@@ -1,6 +1,6 @@
 {
   "name": "ezshare",
-  "version": "1.11.2",
+  "version": "1.11.3",
   "description": "Easily share files over a local network",
   "main": "dist/index.js",
   "repository": "https://github.com/mifi/ezshare",
@@ -17,7 +17,7 @@
     "build:frontend": "cd frontend && yarn build",
     "watch": "yarn build --watch",
     "prepack": "npm run build",
-    "dev": "concurrently -k \"cd frontend && yarn dev\" \"yarn watch\" \"node --enable-source-maps --watch . --dev-mode\""
+    "dev": "yarn build && concurrently -k \"cd frontend && yarn dev\" \"yarn watch\" \"node --enable-source-maps --watch . --dev-mode\""
   },
   "files": [
     "/frontend/dist/**",
@@ -39,6 +39,7 @@
     "formidable": "^3.5.2",
     "fs-extra": "^8.1.0",
     "http-proxy-middleware": "^3.0.3",
+    "is-path-inside": "^4.0.0",
     "lodash": "^4.17.15",
     "morgan": "^1.9.1",
     "p-map": "^4.0.0",
