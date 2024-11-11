@@ -12,6 +12,7 @@
   "bin": "dist/index.js",
   "scripts": {
     "lint": "eslint .",
+    "tsc": "tsc && tsc -p frontend/tsconfig.json",
     "test": "exit 0",
     "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --format=cjs --sourcemap=inline",
     "build:frontend": "cd frontend && yarn build",

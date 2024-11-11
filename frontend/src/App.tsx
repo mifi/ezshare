@@ -104,7 +104,6 @@ const Uploader = ({ onUploadSuccess, cwd }: {
     return (
       <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
         <div style={{ width: 100 }}>
-          {/* @ts-expect-error todo */}
           <CircularProgressbar value={percentage} text={`${percentage}%`} />
         </div>
         {uploadSpeed && <div>{(uploadSpeed / 1e6).toFixed(2)}MB/s</div>}
@@ -284,7 +283,6 @@ const Browser = () => {
                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', alignSelf: 'stretch', background: 'rgba(0,0,0,0.04)', borderRadius: 5, padding: 5, margin: '10px 0', textAlign: 'center', boxSizing: 'border-box' }}>{clipboardText}</div>
 
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-                  {/* @ts-expect-error todo */}
                   <Clipboard data-clipboard-text={clipboardText} onSuccess={onClipboardCopySuccess} style={{ padding: 5, flexGrow: 1 }}>
                     Copy to clipboard
                   </Clipboard>
