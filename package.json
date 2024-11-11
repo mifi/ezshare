@@ -15,18 +15,17 @@
     "tsc": "tsc && tsc -p frontend/tsconfig.json",
     "test": "exit 0",
     "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --format=cjs --sourcemap=inline",
-    "build:frontend": "cd frontend && yarn build",
+    "build:frontend": "(cd frontend && yarn build) && rm -rf dist/frontend && mkdir -p dist && mv frontend/dist dist/frontend",
     "watch": "yarn build --watch",
-    "prepack": "npm run build",
+    "prepack": "yarn build",
     "dev": "yarn build && concurrently -k \"cd frontend && yarn dev\" \"yarn watch\" \"node --enable-source-maps --watch . --dev-mode\""
   },
   "files": [
-    "/frontend/dist/**",
     "/dist/**"
   ],
   "pkg": {
     "assets": [
-      "frontend/dist/**"
+      "dist/**"
     ]
   },
   "dependencies": {

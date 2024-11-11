@@ -285,8 +285,8 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
 
   // Serving the frontend depending on dev/production
   if (devMode) app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
-  else app.use('/', express.static(join(__dirname, '../frontend/dist')));
+  else app.use('/', express.static(join(__dirname, 'frontend')));
 
   // Default to index because SPA
-  app.use('*', (_req, res) => res.sendFile(join(__dirname, '../frontend/dist/index.html')));
+  app.use('*', (_req, res) => res.sendFile(join(__dirname, 'frontend/index.html')));
 };
