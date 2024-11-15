@@ -18,7 +18,9 @@
     "build:frontend": "(cd frontend && yarn build) && rm -rf dist/frontend && mkdir -p dist && mv frontend/dist dist/frontend",
     "watch": "yarn build --watch",
     "prepack": "yarn build",
-    "dev": "yarn build && concurrently -k \"cd frontend && yarn dev\" \"yarn watch\" \"node --enable-source-maps --watch . --dev-mode\""
+    "dev:frontend": "cd frontend && yarn dev",
+    "start:dev": "node --enable-source-maps --watch . --dev-mode",
+    "dev": "yarn build && concurrently -k \"yarn dev:frontend\" \"yarn watch\" \"yarn start:dev\""
   },
   "files": [
     "/dist/**"
