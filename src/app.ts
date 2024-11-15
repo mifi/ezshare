@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
 import Formidable from 'formidable';
 import { createReadStream } from 'node:fs';
-import { join, basename, relative } from 'node:path';
+import { join, basename, relative, resolve } from 'node:path';
 import assert from 'node:assert';
 import * as fs from 'node:fs/promises';
 import morgan from 'morgan';
@@ -34,7 +34,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   devMode: boolean,
 }) => {
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
-  const sharedPath = sharedPathIn || process.cwd();
+  const sharedPath = sharedPathIn ? resolve(sharedPathIn) : process.cwd();
 
   function arePathsEqual(path1: string, path2: string) {
     return relative(path1, path2) === '';
