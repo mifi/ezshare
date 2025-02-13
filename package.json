@@ -65,7 +65,7 @@
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "concurrently": "^5.1.0",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.25.0",
     "eslint": "^8.2.0",
     "eslint-config-mifi": "^0.0.6",
     "eslint-plugin-import": "^2.25.3",
