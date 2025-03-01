@@ -234,6 +234,76 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   }));
 
 
+  async function getFolderSize(folderPath: string): Promise<number> {
+    let totalSize = 0;
+
+    async function calculateSize(dirPath: string): Promise<void> {
+      const files = await fs.readdir(dirPath); // Async readdir
+      for (const file of files) {
+        const filePath = join(dirPath, file);
+        const stats = await fs.stat(filePath); // Async stat
+
+        if (stats.isDirectory()) {
+          await calculateSize(filePath);  // Recursively get size for subdirectories
+        } else {
+          totalSize += stats.size;  // Add file size
+        }
+      }
+    }
+
+    await calculateSize(folderPath); // Start calculation from the root folder
+
+    return totalSize;
+  }
+
+  app.get('/api/browse-withsize', asyncHandler(async (req, res) => {
+    const browseRelPath = req.query['p'] || '/';
+    assert(typeof browseRelPath === 'string');
+    const browseAbsPath = await getFileAbsPath(browseRelPath);
+
+    let readdirEntries = await fs.readdir(browseAbsPath, { withFileTypes: true });
+    readdirEntries = readdirEntries.sort(({ name: a }, { name: b }) => new Intl.Collator(undefined, { numeric: true }).compare(a, b));
+
+    const entries = (await pMap(readdirEntries, async (entry) => {
+      try {
+        // TODO what if a file called ".."
+        const entryRelPath = join(browseRelPath, entry.name);
+        const entryAbsPath = join(browseAbsPath, entry.name);
+        const entryRealPath = await fs.realpath(entryAbsPath);
+
+        if (!entryRealPath.startsWith(sharedPath)) {
+          console.warn('Ignoring symlink pointing outside shared path', entryRealPath);
+          return [];
+        }
+
+        const stat = await fs.lstat(entryRealPath);
+        const isDir = stat.isDirectory();
+        const size = isDir ? await getFolderSize(entryRealPath) : stat.size
+
+        return [{
+          path: entryRelPath,
+          isDir,
+          fileName: entry.name,
+          size: size
+        }];
+      } catch (err) {
+        console.warn((err as Error).message);
+        // https://github.com/mifi/ezshare/issues/29
+        return [];
+      }
+    }, { concurrency: 10 })).flat();
+
+    res.send({
+      files: [
+        { path: join(browseRelPath, '..'), fileName: '..', isDir: true },
+        ...entries,
+      ],
+      cwd: browseRelPath,
+      sharedPath,
+    });
+  }));
+
+
   app.get('/api/zip-files', asyncHandler(async (req, res) => {
     const zipFileName = `${new Date().toISOString().replace(/^(\d+-\d+-\d+)T(\d+):(\d+):(\d+).*$/, '$1 $2.$3.$3')}.zip`;
     const { files: filesJson } = req.query;
