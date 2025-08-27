@@ -26,6 +26,13 @@ npm install -g ezshare
 
 If you don't want to install Node.js, you can download Electron based executable of `ezshare` from Releases.
 
+## Migrate from v1 to v2
+
+```bash
+npm uninstall -g ezshare
+npm i -g @ezshare/cli
+```
+
 ## Usage
 
 - Open a terminal and run:
@@ -87,9 +94,32 @@ yarn build && yarn workspace @ezshare/electron package
 
 ## Release
 
-- Push and wait for green GitHub Actions
+First push and wait for green GitHub Actions.
+
+Version whichever packages are changed:
+
+```bash
+yarn workspace @ezshare/web version patch
+yarn workspace @ezshare/lib version patch
+yarn workspace @ezshare/cli version patch
+yarn workspace @ezshare/electron version patch
+
+git add packages/*/package.json
+git commit -m Release
+```
+
+Now build and publish to npm:
+
+```bash
+yarn build
+yarn workspace @ezshare/web npm publish
+yarn workspace @ezshare/lib npm publish
+yarn workspace @ezshare/cli npm publish
+```
+
+Now trigger workflow dispatch to build the Electron version.
 - Wait for GitHub Actions run
-- Edit draft to add release notes, and check that artifacts get added.
+- Edit draft to add release notes, and check that artifacts got added.
 
 ## Credits
 - Icon made by [Freepik](https://www.flaticon.com/authors/freepik) from [www.flaticon.com](https://www.flaticon.com/)
