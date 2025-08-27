@@ -27,4 +27,4 @@ jobs:
       - run: yarn build
       - run: yarn workspace @ezshare/electron publish
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
