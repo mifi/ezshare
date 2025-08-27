@@ -323,7 +323,7 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
     } else {
       app.use('/', express.static(webPath));
 
-      // Default to index because SPA
+      // Default fallback to index.html because it's a SPA (so user can open any deep link)
       app.use('*', (_req, res) => res.sendFile(join(webPath, 'index.html')));
     }
 
