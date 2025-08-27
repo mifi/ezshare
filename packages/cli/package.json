@@ -1,6 +1,6 @@
 {
   "name": "@ezshare/cli",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "type": "module",
   "bin": {
     "ezshare": "dist/index.js"
