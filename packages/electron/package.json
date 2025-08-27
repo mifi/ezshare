@@ -1,7 +1,7 @@
 {
   "name": "@ezshare/electron",
   "productName": "ezshare",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "private": true,
   "type": "commonjs",
   "main": ".vite/build/main.js",
