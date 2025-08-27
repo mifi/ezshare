@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
 import Formidable from 'formidable';
 import { createReadStream } from 'node:fs';
-import { join, basename, relative, resolve } from 'node:path';
+import { join, basename, relative, resolve as resolvePath } from 'node:path';
 import assert from 'node:assert';
 import * as fs from 'node:fs/promises';
 import morgan from 'morgan';
@@ -11,14 +11,18 @@ import pMap from 'p-map';
 import os from 'node:os';
 import contentDisposition from 'content-disposition';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import qrcode from 'qrcode-terminal';
 import clipboardy from 'clipboardy';
 import bodyParser from 'body-parser';
 import filenamify from 'filenamify';
 import stream from 'node:stream/promises';
 import parseRange from 'range-parser';
-// @ts-expect-error dunno
 import isPathInside from 'is-path-inside';
+import basicAuth from 'basic-auth';
+import { timingSafeEqual } from 'node:crypto';
+
+import Ffmpeg from './ffmpeg.js';
+
+export { default as parseArgs } from './args.js';
 
 
 const maxFields = 1000;
@@ -26,15 +30,20 @@ const debug = false;
 
 const pathExists = (path: string) => fs.access(path, fs.constants.F_OK).then(() => true).catch(() => false);
 
-export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode }: {
+export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel, devMode, auth, ffmpegPath, webPath }: {
   sharedPath: string | undefined,
   port: number,
   maxUploadSize: number,
   zipCompressionLevel: number,
   devMode: boolean,
+  auth?: { username: string, password: string } | undefined,
+  ffmpegPath: string,
+  webPath: string,
 }) => {
+  const ffmpeg = Ffmpeg({ ffmpegPath });
+
   // console.log({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionLevel });
-  const sharedPath = sharedPathIn ? resolve(sharedPathIn) : process.cwd();
+  const sharedPath = sharedPathIn ? resolvePath(sharedPathIn) : process.cwd();
 
   function arePathsEqual(path1: string, path2: string) {
     return relative(path1, path2) === '';
@@ -49,6 +58,23 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
   }
 
   const app = express();
+
+  app.use((req, res, next) => {
+    if (auth != null) {
+      const authRes = basicAuth(req);
+      try {
+        assert(authRes);
+        assert(timingSafeEqual(Buffer.from(authRes.name, 'utf8'), Buffer.from(auth.username, 'utf8'))
+          && timingSafeEqual(Buffer.from(authRes.pass, 'utf8'), Buffer.from(auth.password, 'utf8')));
+      } catch {
+        res.set('WWW-Authenticate', 'Basic realm="ezshare"');
+        res.status(401).send('Authentication required.');
+        return;
+      }
+    }
+
+    next();
+  });
 
   if (debug) app.use(morgan('dev'));
 
@@ -188,6 +214,22 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
     }
   }));
 
+  app.get('/api/thumbnail', asyncHandler(async (req, res) => {
+    const { f } = req.query;
+    assert(typeof f === 'string');
+    const filePath = await getFileAbsPath(f);
+
+    // todo limit concurrency?
+    if (!ffmpeg.hasFfmpeg()) {
+      res.status(500).end();
+      return;
+    }
+    const thumbnail = await ffmpeg.renderThumbnail(filePath);
+    res.set('Cache-Control', 'private, max-age=300');
+    res.set('Content-Type', 'image/jpeg');
+    res.send(Buffer.from(thumbnail));
+  }));
+
   app.get('/api/browse', asyncHandler(async (req, res) => {
     const browseRelPath = req.query['p'] || '/';
     assert(typeof browseRelPath === 'string');
@@ -264,29 +306,36 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
     await promise;
   }));
 
-
-  console.log(`Sharing path ${sharedPath}`);
-
-  app.listen(port, () => {
+  function getUrls() {
     const interfaces = os.networkInterfaces();
-    const urls = Object.values(interfaces).flatMap((addresses) => (addresses != null ? addresses : [])).filter(({ family, address }) => family === 'IPv4' && address !== '127.0.0.1').map(({ address }) => `http://${address}:${port}/`);
-    if (urls.length === 0) return;
-    console.log('Server listening:');
-    urls.forEach((url) => {
-      console.log();
-      console.log(`Scan this QR code on your phone or enter ${url}`);
-      console.log();
-      qrcode.generate(url);
-    });
-    if (urls.length > 1) {
-      console.log('Note that there are multiple QR codes above, one for each network interface. (scroll up)');
+    return Object.values(interfaces).flatMap((addresses) => (addresses != null ? addresses : [])).filter(({ family, address }) => family === 'IPv4' && address !== '127.0.0.1').map(({ address }) => `http://${address}:${port}/`);
+  }
+
+  let started = false;
+
+  async function startServer() {
+    assert(!started, 'Server already started');
+    started = true;
+
+    // Serving the frontend depending on dev/production
+    if (devMode) {
+      app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
+    } else {
+      app.use('/', express.static(webPath));
+
+      // Default to index because SPA
+      app.use('*', (_req, res) => res.sendFile(join(webPath, 'index.html')));
     }
-  });
 
-  // Serving the frontend depending on dev/production
-  if (devMode) app.use('/', createProxyMiddleware({ target: 'http://localhost:3000', ws: true }));
-  else app.use('/', express.static(join(__dirname, 'frontend')));
+    return new Promise<void>((resolve) => {
+      app.listen(port, resolve);
+    });
+  }
 
-  // Default to index because SPA
-  app.use('*', (_req, res) => res.sendFile(join(__dirname, 'frontend/index.html')));
+  return {
+    runStartupCheck: ffmpeg.runStartupCheck,
+    getUrls,
+    start: startServer,
+    sharedPath,
+  };
 };

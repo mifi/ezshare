@@ -11,7 +11,8 @@ A simple **file server** that lets you easily share many big files like photos a
 - Handles a LOT of files
 - Auto ZIPs directories on-the-fly
 - Two-way sharing of clipboard
-- The web client works on all major platforms, including iOS and Android (server must run on a Mac/Windows/Linux computer)
+- The web client works on all major platforms, including iOS and Android (however the server must run on a Mac/Windows/Linux computer)
+- Video/image playback and slideshows
 
 ## Install (with Node.js / npm)
 
@@ -22,13 +23,8 @@ npm install -g ezshare
 ```
 
 ## Install (standalone)
-If you don't want to install Node.js, you can download a zipped executable of `ezshare`:
 
-- [Mac OS X](https://github.com/mifi/ezshare/releases/latest/download/ezshare-macos.zip)
-- [Windows](https://github.com/mifi/ezshare/releases/latest/download/ezshare-win.zip)
-- [Linux](https://github.com/mifi/ezshare/releases/latest/download/ezshare-linux.zip)
-
-Then extract the executable and put it in a folder where you can run it from the command line. You may have to right click the icon and then press "Open" first (on Mac.)
+If you don't want to install Node.js, you can download Electron based executable of `ezshare` from Releases.
 
 ## Usage
 
@@ -40,7 +36,7 @@ Then extract the executable and put it in a folder where you can run it from the
 - **Note** that the two devices need to be on the same WiFi (or possibly personal hotspot)
 
 **Alternatively** you can pass it the path you want to share:
-```
+```bash
 ezshare /your/shared/folder
 ```
 

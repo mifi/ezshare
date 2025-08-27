@@ -1,8 +1,11 @@
 {
-  "name": "ezshare-frontend",
-  "version": "0.1.0",
+  "name": "@ezshare/web",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
   "dependencies": {
+    "@tanstack/react-router": "^1.131.27",
+    "@tanstack/react-router-devtools": "^1.131.27",
     "@vitejs/plugin-react": "^4.2.1",
     "axios": "^0.28.0",
     "fontsource-roboto": "^3.0.3",
@@ -13,24 +16,25 @@
     "react-dom": "^18.3.1",
     "react-dropzone": "^10.2.2",
     "react-icons": "^3.9.0",
-    "react-router": "^5.1.2",
-    "react-router-dom": "^5.1.2",
-    "sweetalert2": "^11.14.5",
-    "vite": "^5.4.12"
+    "sweetalert2": "^11.22.5",
+    "tiny-invariant": "^1.3.3",
+    "vite": "^7.1.3",
+    "zod": "^4.0.17"
   },
   "files": [
     "/dist"
   ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "dev": "vite"
   },
-  "packageManager": "yarn@4.5.1",
   "devDependencies": {
+    "@tanstack/router-plugin": "^1.131.27",
+    "@tsconfig/strictest": "^2.0.5",
+    "@tsconfig/vite-react": "^3.0.2",
+    "@types/css-modules": "^1.0.5",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@types/react-router": "5",
-    "@types/react-router-dom": "5",
     "sass-embedded": "^1.80.3",
     "vite-plugin-svgr": "^4.3.0"
   }

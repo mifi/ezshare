@@ -1,0 +1,26 @@
+{
+  "name": "@ezshare/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc --preserveWatchOutput",
+    "start": "node --enable-source-maps --watch dist --dev-mode",
+    "dev": "yarn build && concurrently -k \"yarn build --watch\" \"yarn start\"",
+    "prepack": "yarn build"
+  },
+  "files": [
+    "/dist/**"
+  ],
+  "dependencies": {
+    "@ezshare/lib": "workspace:^",
+    "concurrently": "*",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node18": "^18.2.4",
+    "@tsconfig/strictest": "^2.0.5",
+    "typescript": "*"
+  }
+}

@@ -1,0 +1,62 @@
+.dialog {
+  --duration: 0.2s;
+
+  border: .1em solid var(--black-a5);
+  background: var(--white-a8);
+  color: var(--gray-12);
+  backdrop-filter: blur(2em);
+  border-radius: .5em;
+  padding: 1.7em;
+  box-shadow: 0 0 1em .3em var(--black-a1);
+  transform-origin: center;
+  transition:
+    translate var(--duration) ease-out, 
+    scale     var(--duration) ease-out,
+    opacity   var(--duration) ease-out,
+    display   var(--duration) ease-out allow-discrete;
+
+  &[open] {
+    /* Post-Entry (Normal) State */
+    scale: 1;
+    opacity: 1;
+
+    /* Pre-Entry State */
+    @starting-style {
+      scale: 0.6;
+      opacity: 0;
+    }
+  }
+
+  &::backdrop {
+    background-color: var(--black-a7);
+    animation: overlayShow 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  h1 {
+    text-transform: uppercase;
+    font-size: 1.3em;
+    margin-top: 0;
+  }
+}
+
+.dialog * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout:none;
+  touch-action: pan-x pan-y;
+}
+
+:global(.dark-theme) .dialog {
+  border: .1em solid var(--white-a3);
+  background: var(--black-a4);
+  box-shadow: 0 0 1em .3em var(--black-a2);
+}
+
+@keyframes overlayShow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}  

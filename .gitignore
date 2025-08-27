@@ -65,7 +65,11 @@ typings/
 # dotenv environment variables file
 .env
 
-# next.js build output
-.next
+.vite
 
-/dist
+tsconfig.tsbuildinfo
+
+/packages/electron/out
+/packages/cli/dist
+/packages/lib/dist
+/packages/web/dist

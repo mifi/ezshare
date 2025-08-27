@@ -1,7 +1,7 @@
 {
   "name": "ezshare",
   "version": "1.11.5",
-  "description": "Easily share files over a local network",
+  "description": "Easily share and receive files over a local network",
   "main": "dist/index.js",
   "repository": "https://github.com/mifi/ezshare",
   "author": "Mikael Finstad <finstaden@gmail.com>",
@@ -9,63 +9,23 @@
   "engines": {
     "node": ">=18"
   },
+  "workspaces": [
+    "packages/*"
+  ],
+  "type": "module",
   "bin": "dist/index.js",
   "scripts": {
-    "lint": "eslint .",
-    "tsc": "tsc && tsc -p frontend/tsconfig.json",
     "test": "exit 0",
-    "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --format=cjs --sourcemap=inline",
-    "build:frontend": "(cd frontend && yarn build) && rm -rf dist/frontend && mkdir -p dist && mv frontend/dist dist/frontend",
-    "watch": "yarn build --watch",
-    "prepack": "yarn build",
-    "dev:frontend": "cd frontend && yarn dev",
-    "start:dev": "node --enable-source-maps --watch . --dev-mode",
-    "dev": "yarn build && concurrently -k \"yarn dev:frontend\" \"yarn watch\" \"yarn start:dev\""
-  },
-  "files": [
-    "/dist/**"
-  ],
-  "pkg": {
-    "assets": [
-      "dist/**"
-    ]
-  },
-  "dependencies": {
-    "archiver": "^3.1.1",
-    "body-parser": "^1.19.0",
-    "clipboardy": "^2.3.0",
-    "content-disposition": "^0.5.3",
-    "express": "^4.17.1",
-    "express-async-handler": "^1.1.4",
-    "filenamify": "^4.2.0",
-    "formidable": "^3.5.2",
-    "fs-extra": "^8.1.0",
-    "http-proxy-middleware": "^3.0.3",
-    "is-path-inside": "^4.0.0",
-    "lodash": "^4.17.15",
-    "morgan": "^1.9.1",
-    "p-map": "^4.0.0",
-    "qrcode-terminal": "^0.12.0",
-    "range-parser": "^1.2.1",
-    "yargs": "^17.7.2"
+    "lint": "eslint .",
+    "build": "yarn workspaces foreach -Apt run build",
+    "clean": "git clean -Xfd packages -e '!node_modules' -e '!**/node_modules/**/*'",
+    "dev:cli": "yarn build && yarn workspaces foreach -Rpi --from @ezshare/cli run dev",
+    "dev:electron": "yarn build && yarn workspaces foreach -Rp -i --from @ezshare/electron run dev"
   },
   "devDependencies": {
-    "@tsconfig/node18": "^18.2.4",
-    "@tsconfig/strictest": "^2.0.5",
-    "@tsconfig/vite-react": "^3.0.2",
-    "@types/archiver": "3",
-    "@types/content-disposition": "^0.5.8",
-    "@types/express": "4",
-    "@types/formidable": "3",
-    "@types/lodash": "^4.17.12",
-    "@types/morgan": "^1.9.9",
-    "@types/node": "18",
-    "@types/qrcode-terminal": "^0.12.2",
-    "@types/yargs": "^17.0.33",
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "concurrently": "^5.1.0",
-    "esbuild": "^0.25.0",
     "eslint": "^8.2.0",
     "eslint-config-mifi": "^0.0.6",
     "eslint-plugin-import": "^2.25.3",
@@ -73,8 +33,7 @@
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^4.3.0",
     "eslint-plugin-unicorn": "^51.0.1",
-    "pkg": "^5.8.1",
     "typescript": "^5.6.3"
   },
-  "packageManager": "yarn@4.5.1"
+  "packageManager": "yarn@4.9.4"
 }

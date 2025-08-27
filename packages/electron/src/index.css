@@ -1,0 +1,33 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  font-family: sans-serif;
+}
+
+.dynamic {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  flex-wrap: wrap;
+}
+
+.url {
+  margin: .5em;
+  width: 14em;
+  overflow: hidden;
+}
+
+.url canvas {
+  width: 100% !important;
+  height: auto !important;
+}
+
+.url .text {
+  margin-top: .5em;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

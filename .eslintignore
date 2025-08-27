@@ -1,2 +1,6 @@
-/dist
-/frontend/dist
+/packages/electron/out
+/packages/cli/dist
+/packages/lib/dist
+/packages/web/dist
+
+/packages/web/src/routeTree.gen.ts

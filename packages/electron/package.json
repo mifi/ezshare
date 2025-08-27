@@ -1,0 +1,28 @@
+{
+  "name": "@ezshare/electron",
+  "productName": "ezshare",
+  "version": "0.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": ".vite/build/main.js",
+  "dependencies": {
+    "@ezshare/lib": "workspace:^"
+  },
+  "scripts": {
+    "dev": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish"
+  },
+  "packageManager": "yarn@4.9.4",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.8.3",
+    "@electron-forge/maker-zip": "^7.8.3",
+    "@electron-forge/plugin-vite": "^7.8.3",
+    "@electron-forge/publisher-github": "^7.8.3",
+    "@types/qrcode": "^1",
+    "electron": "^37.3.1",
+    "qrcode": "^1.5.4",
+    "vite": "5"
+  }
+}
