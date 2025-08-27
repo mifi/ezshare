@@ -4,6 +4,9 @@ module.exports = {
   overrides: [
     {
       files: ['./packages/web/src/**/*.{js,mjs,cjs,mjs,jsx,ts,mts,tsx}'],
+      rules: {
+        'import/no-extraneous-dependencies': 'off',
+      },
       env: {
         node: false,
         browser: true,
