@@ -1,7 +1,6 @@
 {
   "name": "@ezshare/web",
   "version": "0.0.0",
-  "private": true,
   "type": "module",
   "dependencies": {
     "@tanstack/react-router": "^1.131.27",
