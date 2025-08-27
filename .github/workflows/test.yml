@@ -15,7 +15,7 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: yarn --immutable
-      - run: yarn deduple --check
+      - run: yarn dedupe --check
       - run: yarn build
       - run: yarn test
       - run: yarn lint
