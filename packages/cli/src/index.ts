@@ -3,15 +3,16 @@
 import assert from 'node:assert';
 import { dirname } from 'node:path';
 import qrcode from 'qrcode-terminal';
+import { fileURLToPath } from 'node:url';
 
 import App, { parseArgs } from '@ezshare/lib';
 
 
 const args = parseArgs(process.argv.slice(2));
 
-const indexPath = await import.meta.resolve?.('@ezshare/web/dist/index.html');
-assert(indexPath);
-const webPath = dirname(indexPath);
+const indexUrl = await import.meta.resolve?.('@ezshare/web/dist/index.html');
+assert(indexUrl);
+const webPath = dirname(fileURLToPath(indexUrl));
 
 const { start, runStartupCheck, getUrls, sharedPath } = App({ ...args, webPath });
 
