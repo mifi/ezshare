@@ -65,10 +65,29 @@ Then just share the URL you are given from one of these services.
 More alternatives:
 - https://github.com/anderspitman/awesome-tunneling
 
+## Development
+
+### Running CLI locally
+
+```bash
+yarn dev:cli
+```
+
+### Running Electron locally
+
+```bash
+yarn dev:electron
+```
+
+### Package locally
+
+```bash
+yarn build && yarn workspace @ezshare/electron package
+```
+
 ## Release
 
 - Push and wait for green GitHub Actions
-- Run `np` and **Save as draft** in GitHub
 - Wait for GitHub Actions run
 - Edit draft to add release notes, and check that artifacts get added.
 
