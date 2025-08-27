@@ -25,6 +25,6 @@ jobs:
       - run: corepack enable
       - run: yarn --immutable
       - run: yarn build
-      - run: yarn electron:publish
+      - run: yarn workspace @ezshare/electron publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
