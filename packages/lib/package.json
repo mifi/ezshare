@@ -10,6 +10,9 @@
   "files": [
     "/dist/**"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "types": "dist/index.d.ts",
   "dependencies": {
     "@ezshare/web": "workspace:^",
