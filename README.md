@@ -19,7 +19,7 @@ A simple **file server** that lets you easily share many big files like photos a
 - Install [Node.js](https://nodejs.org) and open a terminal:
 
 ```bash
-npm install -g ezshare
+npm install -g @ezshare/cli
 ```
 
 ## Install (standalone)
