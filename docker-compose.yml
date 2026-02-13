@@ -1,0 +1,20 @@
+services:
+  ezshare:
+    build: .
+    container_name: ezshare-app
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ${SHARE_PATH}:/data
+    ports:
+      - "3003:3003"
+    # Essential flags for running Electron as root in Docker
+    command: /data --port 3003 --no-sandbox --disable-gpu
+
+#    healthcheck:
+      #test: ["CMD", "curl", "-f", "http://localhost:3003/"]
+      #interval: 180s
+      #timeout: 10s
+      #retries: 3
+      #start_period: 20s
