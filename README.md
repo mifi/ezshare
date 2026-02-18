@@ -62,6 +62,18 @@ If you prefer to run the `Dockerfile` manually without Compose:
 * **Data Volume:** The application expects a volume mounted at `/shared` to store and retrieve files.
 * **Environment:** The container uses `node:20-slim` and includes necessary runtime tools like `ffmpeg` for media processing.
 
+### Volume Permissions (Important)
+
+Since the container now runs as UID 1000 (`node`), the host directory mounted to `/shared` (defined in `docker-compose.yml` as `./my-shared-data`) must be writable by UID 1000.
+
+If you encounter `Permission Denied` errors on Linux/Mac, run the following on the host machine to fix local folder permissions:
+
+```bash
+mkdir -p ./my-shared-data
+chown -R 1000:1000 ./my-shared-data
+```
+
+
 
 ## Install (standalone)
 
