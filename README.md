@@ -22,6 +22,47 @@ A simple **file server** that lets you easily share many big files like photos a
 npm install -g @ezshare/cli
 ```
 
+## 🐳 Docker Deployment
+
+You can run `ezshare` easily using Docker. [cite_start]This ensures all dependencies like `ffmpeg` and `xvfb` are pre-installed and configured correctly[cite: 3, 4].
+
+### Prerequisites
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine installed.
+
+### Option 1: Using Docker Compose (Recommended)
+The easiest way to run the application is with Docker Compose. This handles the build, port mapping, and volume creation automatically.
+
+1.  **Start the application:**
+    ```bash
+    docker compose up --build
+    ```
+
+2.  **Access the app:**
+    [cite_start]Open your browser to `http://localhost:3003`[cite: 4].
+
+3.  **Shared Files:**
+    Place files in the `./my-shared-data` folder (created automatically in your project root). These will appear in the application under `/shared`.
+
+### Option 2: Manual Docker CLI
+If you prefer to run the `Dockerfile` manually without Compose:
+
+1.  **Build the image:**
+    ```bash
+    docker build -t ezshare .
+    ```
+
+2.  **Run the container:**
+    [cite_start]You must map port `3003` and mount a volume to `/shared` for the application to function properly[cite: 4].
+    ```bash
+    docker run -p 3003:3003 -v $(pwd)/my-shared-data:/shared ezshare
+    ```
+
+### Configuration Details
+* [cite_start]**Port:** The application listens on port `3003` by default[cite: 4].
+* [cite_start]**Data Volume:** The application expects a volume mounted at `/shared` to store and retrieve files[cite: 4].
+* [cite_start]**Environment:** The container uses `node:20-slim` and includes necessary runtime tools like `ffmpeg` for media processing[cite: 3].
+
+
 ## Install (standalone)
 
 If you don't want to install Node.js, you can download Electron based executable of `ezshare` from Releases.
