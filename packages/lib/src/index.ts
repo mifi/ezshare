@@ -136,13 +136,54 @@ app.delete('/api/delete', asyncHandler(async (req, res) => {
       return;
     }
 
-    console.log('Deleting file:', absPath);
-    await fs.unlink(absPath);
+    console.log('Deleting item:', absPath);
+    
+    // Use fs.rm instead of fs.unlink to handle both files and non-empty directories safely
+    await fs.rm(absPath, { recursive: true, force: true });
     
     res.json({ success: true });
   }));
 
+  // NEW CREATE DIRECTORY ENDPOINT
+  app.post('/api/mkdir', bodyParser.json(), asyncHandler(async (req, res) => {
+    const { path: parentPath, name } = req.body;
+    
+    assert(typeof parentPath === 'string', 'Parent path must be a string');
+    assert(typeof name === 'string', 'Folder name must be a string');
 
+    const absParentPath = await getFileAbsPath(parentPath);
+    const safeName = filenamify(name, { maxLength: 255 });
+    const newDirPath = join(absParentPath, safeName);
+
+    console.log('Creating directory:', newDirPath);
+    await fs.mkdir(newDirPath);
+    
+    res.json({ success: true });
+  }));
+
+  // NEW RENAME FILE/FOLDER ENDPOINT
+  app.post('/api/rename', bodyParser.json(), asyncHandler(async (req, res) => {
+    const { path: targetPath, newName } = req.body;
+    
+    assert(typeof targetPath === 'string', 'Target path must be a string');
+    assert(typeof newName === 'string', 'New name must be a string');
+
+    const absOldPath = await getFileAbsPath(targetPath);
+    
+    if (absOldPath === sharedPath) {
+      res.status(403).json({ error: 'Cannot rename root directory' });
+      return;
+    }
+    
+    const parentDir = join(absOldPath, '..');
+    const safeNewName = filenamify(newName, { maxLength: 255 });
+    const absNewPath = join(parentDir, safeNewName);
+
+    console.log(`Renaming ${absOldPath} to ${absNewPath}`);
+    await fs.rename(absOldPath, absNewPath);
+    
+    res.json({ success: true });
+  }));
   // NOTE: Must support non latin characters
   app.post('/api/paste', bodyParser.urlencoded({ extended: false }), asyncHandler(async (req, res) => {
     // eslint-disable-next-line unicorn/prefer-ternary

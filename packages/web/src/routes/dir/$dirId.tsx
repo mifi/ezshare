@@ -1,13 +1,14 @@
 import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-router';
 import axios from 'axios';
-import { useState, useCallback, useMemo, useEffect, ReactNode, CSSProperties, ChangeEventHandler, ClipboardEvent } from 'react';
+import { useState, useCallback, useMemo, useEffect, ReactNode, CSSProperties, ChangeEventHandler, ClipboardEvent, useRef } from 'react';
 
-import { FaFileArchive, FaFileDownload, FaFileAlt, FaFolder, FaSpinner, FaShareAlt, FaRedoAlt, FaTrash } from 'react-icons/fa';
+import { FaFileArchive, FaFileDownload, FaFileAlt, FaFolder, FaSpinner, FaShareAlt, FaRedoAlt, FaTrash, FaEdit, FaCheck, FaTimes, FaFolderPlus } from 'react-icons/fa';
 import Clipboard from 'react-clipboard.js';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { colorLink, colorLink2, getDownloadUrl, getThumbUrl, headingBackgroundColor, mightBeImage, mightBeVideo, mightBeText, rootPath, Toast, CurrentDir, Context } from '../../util';
 import Uploader from '../../Uploader';
+import Swal from 'sweetalert2';
 
 
 // eslint-disable-next-line import/prefer-default-export
@@ -42,7 +43,7 @@ const ZipDownload = ({ url, title = 'Download folder as ZIP', style }: { url: st
 const iconSize = '2em';
 const iconStyle = { flexShrink: 0, color: 'rgba(0,0,0,0.5)', marginRight: '.5em', width: iconSize, height: iconSize };
 
-function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick, onDelete }: {
+function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick, onDelete, onRename }: {
   path: string,
   isDir: boolean,
   fileName: string,
@@ -50,10 +51,29 @@ function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick,
   checked?: boolean | undefined,
   onFileClick?: () => void,
   onDelete?: (path: string) => void,
+  onRename?: (path: string, newName: string) => void, // Added onRename prop
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(fileName);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const mightBeMedia = mightBeVideo({ isDir, fileName }) || mightBeImage({ isDir, fileName });
   const isClickable = mightBeMedia || mightBeText({ isDir, fileName });
+
+  // Focus and select the filename text when entering edit mode
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      
+      // If it's a file with an extension, select only the name part
+      const lastDotIndex = fileName.lastIndexOf('.');
+      if (!isDir && lastDotIndex > 0) {
+        inputRef.current.setSelectionRange(0, lastDotIndex);
+      } else {
+        inputRef.current.select(); // Select everything for folders or files without extensions
+      }
+    }
+  }, [isEditing, isDir, fileName]);
 
   function renderIcon() {
     if (mightBeMedia) {
@@ -73,23 +93,65 @@ function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick,
     );
   }
 
+  const handleSaveRename = () => {
+    const trimmedName = editName.trim();
+    if (trimmedName && trimmedName !== fileName) {
+      onRename?.(path, trimmedName);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelRename = () => {
+    setEditName(fileName);
+    setIsEditing(false);
+  };
+
+  // --- EDIT MODE UI ---
+  if (isEditing) {
+    return (
+      <div style={fileRowStyle}>
+        {renderIcon()}
+        <input 
+          ref={inputRef}
+          type="text"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSaveRename();
+            if (e.key === 'Escape') handleCancelRename();
+          }}
+          style={{ flexGrow: 1, padding: '4px 8px', margin: '0 10px', fontFamily: 'inherit', fontSize: 'inherit', borderRadius: '4px', border: '1px solid #3498db', outline: 'none' }}
+        />
+        <FaCheck size={18} style={{ color: '#2ecc71', cursor: 'pointer', marginRight: '10px', flexShrink: 0 }} title="Save" onClick={handleSaveRename} />
+        <FaTimes size={18} style={{ color: '#e74c3c', cursor: 'pointer', marginRight: '10px', flexShrink: 0 }} title="Cancel" onClick={handleCancelRename} />
+      </div>
+    );
+  }
+
+  // --- NORMAL UI ---
   return (
     <div style={fileRowStyle}>
       {renderIcon()}
       {isDir ? (
         <>
-          {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
           <Link from={Route.fullPath} params={{ dirId: path }} style={{ ...linkStyle, cursor: 'pointer' }}>
             {fileName} {fileName === '..' && <span style={{ color: 'rgba(0,0,0,0.3)' }}>(parent dir)</span>}
           </Link>
 
           <div style={{ flexGrow: 1 }} />
 
+          {fileName !== '..' && onRename && (
+            <FaEdit size={18} style={{ marginLeft: '.8em', cursor: 'pointer', color: '#3498db' }} title="Rename Folder" onClick={() => setIsEditing(true)} />
+          )}
+
           <ZipDownload url={getDownloadUrl(path, true)} style={{ marginLeft: '.5em' }} />
+          
+          {fileName !== '..' && onDelete && (
+             <FaTrash size={18} style={{ marginLeft: '.8em', cursor: 'pointer', color: '#e74c3c' }} title="Delete Folder" onClick={() => onDelete(path)} />
+          )}
         </>
       ) : (
         <>
-          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, react/jsx-props-no-spreading */}
           <div style={{ ...linkStyle, cursor: isClickable ? 'pointer' : 'default' }} {...(isClickable && { role: 'button', tabIndex: 0, onClick: () => onFileClick?.() })}>{fileName}</div>
 
           <div style={{ flexGrow: 1 }} />
@@ -97,15 +159,15 @@ function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick,
           {onCheckedChange != null && (
             <input type="checkbox" checked={checked} onChange={onCheckedChange} style={{ marginLeft: '.5em' }} />
           )}
+
+          {onRename && (
+            <FaEdit size={18} style={{ marginLeft: '.8em', cursor: 'pointer', color: '#3498db' }} title="Rename File" onClick={() => setIsEditing(true)} />
+          )}
+
           <FileDownload url={getDownloadUrl(path, true, true)} style={{ marginLeft: '.5em' }} />
           
           {onDelete && (
-             <FaTrash 
-               size={18} 
-               style={{ marginLeft: '.8em', cursor: 'pointer', color: '#e74c3c' }} 
-               title="Delete File"
-               onClick={() => onDelete(path)}
-             />
+             <FaTrash size={18} style={{ marginLeft: '.8em', cursor: 'pointer', color: '#e74c3c' }} title="Delete File" onClick={() => onDelete(path)} />
           )}
         </>
       )}
@@ -156,19 +218,70 @@ function Browser() {
     loadCurrentPath();
   }, [loadCurrentPath]);
   
-  const handleDelete = useCallback(async (path: string) => {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm(`Are you sure you want to delete this file?`)) return;
+const handleDelete = useCallback(async (path: string) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e74c3c', // Danger red for deletion
+      cancelButtonColor: colorLink,  // Match your theme for cancel
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       await axios.delete('/api/delete', { params: { path } });
-      Toast.fire({ icon: 'success', title: 'File deleted successfully' });
+      Toast.fire({ icon: 'success', title: 'Item deleted successfully' });
       loadCurrentPath();
     } catch (err) {
       console.error(err);
-      Toast.fire({ icon: 'error', title: 'Failed to delete file' });
+      Toast.fire({ icon: 'error', title: 'Failed to delete item' });
     }
   }, [loadCurrentPath]);
+  
+  const handleRename = useCallback(async (path: string, newName: string) => {
+    try {
+      await axios.post('/api/rename', { path, newName });
+      Toast.fire({ icon: 'success', title: 'Renamed successfully' });
+      loadCurrentPath();
+    } catch (err) {
+      console.error(err);
+      Toast.fire({ icon: 'error', title: 'Failed to rename item' });
+    }
+  }, [loadCurrentPath]);
+
+const handleCreateFolder = useCallback(async () => {
+    const { value: folderName } = await Swal.fire({
+      title: 'New Folder',
+      input: 'text',
+      inputLabel: 'Enter the name for the new folder:',
+      inputPlaceholder: 'My Folder',
+      showCancelButton: true,
+      confirmButtonText: 'Create',
+      confirmButtonColor: colorLink, // Matches your existing theme color
+      cancelButtonColor: '#d33',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return 'Please enter a folder name!';
+        }
+        return null; // Input is valid
+      }
+    });
+
+    // If the user canceled the dialog, folderName will be undefined
+    if (!folderName || !folderName.trim()) return;
+
+    try {
+      await axios.post('/api/mkdir', { path: currentDir.cwd, name: folderName.trim() });
+      Toast.fire({ icon: 'success', title: 'Folder created successfully' });
+      loadCurrentPath();
+    } catch (err) {
+      console.error(err);
+      Toast.fire({ icon: 'error', title: 'Failed to create folder' });
+    }
+  }, [currentDir.cwd, loadCurrentPath]);
 
   const dirs = useMemo(() => currentDir.files.filter((f) => f.isDir), [currentDir.files]);
   const nonDirs = useMemo(() => currentDir.files.filter((f) => !f.isDir), [currentDir.files]);
@@ -272,7 +385,16 @@ function Browser() {
         </Section>
 
         <Section>
-          <h2>Files</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>Files</h2>
+            <button 
+              onClick={handleCreateFolder} 
+              type="button" 
+              style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', backgroundColor: colorLink, color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              <FaFolderPlus style={{ marginRight: '8px' }} /> New Folder
+            </button>
+          </div>
 
           <Uploader cwd={currentDir.cwd} onUploadSuccess={handleUploadSuccess} />
 
@@ -301,11 +423,11 @@ function Browser() {
           </div>
 
           {/* eslint-disable-next-line react/jsx-props-no-spreading */}
-          {dirs.map((props) => <FileRow key={props.path} {...props} />)}
+          {dirs.map((props) => <FileRow key={props.path} {...props} onDelete={handleDelete} onRename={handleRename} />)}
           {nonDirs.map((props) => {
             const { path } = props;
             // eslint-disable-next-line react/jsx-props-no-spreading
-            return <FileRow key={path} {...props} checked={selectedFilesMap[path]} onCheckedChange={(e) => handleFileSelect(path, e.target.checked)} onFileClick={() => navigate({ to: './file', search: { p: path } })} onDelete={handleDelete} />;
+            return <FileRow key={path} {...props} checked={selectedFilesMap[path]} onCheckedChange={(e) => handleFileSelect(path, e.target.checked)} onFileClick={() => navigate({ to: './file', search: { p: path } })} onDelete={handleDelete} onRename={handleRename} />;
           })}
         </Section>
       </div>
