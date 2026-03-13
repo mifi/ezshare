@@ -1,0 +1,19 @@
+services:
+  ezshare:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ezshare-app
+    restart: unless-stopped
+    
+    # Map port 3003 on host to 3003 in container
+    ports:
+      - "3003:3003"
+    
+    # Mount a local directory to /shared
+    volumes:
+      - ./my-shared/path:/shared
+    
+    # (Optional) Ensure the container uses the node user explicitly
+    # though the Dockerfile USER instruction already handles this.
+    user: "node"
