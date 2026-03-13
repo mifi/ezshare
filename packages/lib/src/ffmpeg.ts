@@ -5,9 +5,13 @@ export default function Ffmpeg({ ffmpegPath }: { ffmpegPath: string }) {
   let hasFfmpeg = false;
 
   async function runStartupCheck() {
-    // will throw if exit code != 0
-    await execa(ffmpegPath, ['-hide_banner', '-f', 'lavfi', '-i', 'nullsrc=s=256x256:d=1', '-f', 'null', '-']);
-    hasFfmpeg = true;
+    try {
+      // will throw if exit code != 0
+      await execa(ffmpegPath, ['-hide_banner', '-f', 'lavfi', '-i', 'nullsrc=s=256x256:d=1', '-f', 'null', '-']);
+      hasFfmpeg = true;
+    } catch (err) {
+      console.warn('ffmpeg check failed, ffmpeg will not be available', err);
+    }
   }
 
   async function renderThumbnail(filePath: string) {
