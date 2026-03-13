@@ -30,6 +30,7 @@ export const iconColor = '#ffa62b'; // 'rgba(0,0,0,0.3)'
 
 export const mightBeVideo = ({ isDir, fileName }: { isDir?: boolean, fileName: string }) => !isDir && /\.(mp4|m4v|mov|qt|webm|mkv|avi|flv|vob|ogg|ogv|mpe?g|m2v|mp2|mpv)$/i.test(fileName);
 export const mightBeImage = ({ isDir, fileName }: { isDir?: boolean, fileName: string }) => !isDir && /\.(jpe?g|png|gif|webp)$/i.test(fileName);
+export const mightBeText = ({ isDir, fileName }: { isDir?: boolean, fileName: string }) => !isDir && /\.(txt|md|csv|json|js|jsx|ts|tsx|css|html|xml|yml|yaml|ini|log|sh|bat)$/i.test(fileName);
 
 export const getDownloadUrl = (path: string, cacheBuster?: boolean, forceDownload?: boolean) => `/api/download?f=${encodeURIComponent(path)}&forceDownload=${forceDownload ? 'true' : 'false'}&_=${cacheBuster ? Date.now() : 0}`;
 export const getThumbUrl = (path: string) => `/api/thumbnail?f=${encodeURIComponent(path)}`;
