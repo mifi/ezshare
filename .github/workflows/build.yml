@@ -14,15 +14,20 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
-    env:
-      # https://github.com/actions/setup-node/issues/531
-      SKIP_YARN_COREPACK_CHECK: true
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+
+      # todo remove once fixed https://github.com/actions/setup-node/issues/531
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
       - run: corepack enable
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'yarn'
+
       - run: yarn --immutable
       - run: yarn build
       - run: yarn workspace @ezshare/electron publish
