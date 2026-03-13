@@ -171,7 +171,7 @@ yarn workspace @ezshare/cli npm publish
 ```
 
 - `git push`
-- Now trigger [workflow dispatch](https://github.com/mifi/ezshare/actions/workflows/publish.yml) to build the Electron version.
+- Now trigger [workflow dispatch](https://github.com/mifi/ezshare/actions/workflows/build.yml) to build the Electron version.
 - Wait for GitHub Actions run
 - Edit draft to add release notes, and check that artifacts got added.
 
