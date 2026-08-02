@@ -58,7 +58,7 @@ If you prefer to run the `Dockerfile` manually without Compose:
     ```
 
 ### Configuration Details
-* **Port:** The application listens on port `3003` by default.
+* **Port:** The Docker image starts ezshare with `--port 3003` (see the `Dockerfile`), so the container listens on port `3003`. Note that this differs from the standalone CLI, which listens on port `8080` by default.
 * **Data Volume:** The application expects a volume mounted at `/shared` to store and retrieve files.
 * **Environment:** The container uses `node:20-slim` and includes necessary runtime tools like `ffmpeg` for media processing.
 
@@ -101,6 +101,8 @@ ezshare /your/shared/folder
 ```
 
 For more info run `ezshare --help`
+
+**Note:** the standalone CLI listens on port `8080` by default (change it with `--port`). The Docker setup above instead runs ezshare on port `3003`.
 
 ## Supported platforms
 - The web client with all operating systems that have a modern browser. iOS, Android, Mac, Windows, ++
