@@ -2,11 +2,11 @@ import { createFileRoute, Outlet, Link, useNavigate } from '@tanstack/react-rout
 import axios from 'axios';
 import { useState, useCallback, useMemo, useEffect, ReactNode, CSSProperties, ChangeEventHandler, ClipboardEvent } from 'react';
 
-import { FaFileArchive, FaFileDownload, FaFileAlt, FaFolder, FaSpinner, FaShareAlt, FaRedoAlt } from 'react-icons/fa';
+import { FaFileArchive, FaFileDownload, FaFileAlt, FaFolder, FaSpinner, FaShareAlt, FaRedoAlt, FaTrash } from 'react-icons/fa';
 import Clipboard from 'react-clipboard.js';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { colorLink, colorLink2, getDownloadUrl, getThumbUrl, headingBackgroundColor, mightBeImage, mightBeVideo, rootPath, Toast, CurrentDir, Context } from '../../util';
+import { colorLink, colorLink2, getDownloadUrl, getThumbUrl, headingBackgroundColor, mightBeImage, mightBeVideo, mightBeText, rootPath, Toast, CurrentDir, Context } from '../../util';
 import Uploader from '../../Uploader';
 
 
@@ -42,15 +42,18 @@ const ZipDownload = ({ url, title = 'Download folder as ZIP', style }: { url: st
 const iconSize = '2em';
 const iconStyle = { flexShrink: 0, color: 'rgba(0,0,0,0.5)', marginRight: '.5em', width: iconSize, height: iconSize };
 
-function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick }: {
+function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick, onDelete }: {
   path: string,
   isDir: boolean,
   fileName: string,
   onCheckedChange?: ChangeEventHandler<HTMLInputElement>,
   checked?: boolean | undefined,
   onFileClick?: () => void,
+  onDelete?: (path: string) => void,
 }) {
+  
   const mightBeMedia = mightBeVideo({ isDir, fileName }) || mightBeImage({ isDir, fileName });
+  const isClickable = mightBeMedia || mightBeText({ isDir, fileName });
 
   function renderIcon() {
     if (mightBeMedia) {
@@ -87,7 +90,7 @@ function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick 
       ) : (
         <>
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, react/jsx-props-no-spreading */}
-          <div style={{ ...linkStyle, cursor: mightBeMedia ? 'pointer' : 'default' }} {...(mightBeMedia && { role: 'button', tabIndex: 0, onClick: () => onFileClick?.() })}>{fileName}</div>
+          <div style={{ ...linkStyle, cursor: isClickable ? 'pointer' : 'default' }} {...(isClickable && { role: 'button', tabIndex: 0, onClick: () => onFileClick?.() })}>{fileName}</div>
 
           <div style={{ flexGrow: 1 }} />
 
@@ -95,6 +98,15 @@ function FileRow({ path, isDir, fileName, onCheckedChange, checked, onFileClick 
             <input type="checkbox" checked={checked} onChange={onCheckedChange} style={{ marginLeft: '.5em' }} />
           )}
           <FileDownload url={getDownloadUrl(path, true, true)} style={{ marginLeft: '.5em' }} />
+          
+          {onDelete && (
+             <FaTrash 
+               size={18} 
+               style={{ marginLeft: '.8em', cursor: 'pointer', color: '#e74c3c' }} 
+               title="Delete File"
+               onClick={() => onDelete(path)}
+             />
+          )}
         </>
       )}
     </div>
@@ -142,6 +154,20 @@ function Browser() {
 
   const handleRefreshClick = useCallback(() => {
     loadCurrentPath();
+  }, [loadCurrentPath]);
+  
+  const handleDelete = useCallback(async (path: string) => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(`Are you sure you want to delete this file?`)) return;
+
+    try {
+      await axios.delete('/api/delete', { params: { path } });
+      Toast.fire({ icon: 'success', title: 'File deleted successfully' });
+      loadCurrentPath();
+    } catch (err) {
+      console.error(err);
+      Toast.fire({ icon: 'error', title: 'Failed to delete file' });
+    }
   }, [loadCurrentPath]);
 
   const dirs = useMemo(() => currentDir.files.filter((f) => f.isDir), [currentDir.files]);
@@ -279,12 +305,9 @@ function Browser() {
           {nonDirs.map((props) => {
             const { path } = props;
             // eslint-disable-next-line react/jsx-props-no-spreading
-            return <FileRow key={path} {...props} checked={selectedFilesMap[path]} onCheckedChange={(e) => handleFileSelect(path, e.target.checked)} onFileClick={() => navigate({ to: './file', search: { p: path } })} />;
+            return <FileRow key={path} {...props} checked={selectedFilesMap[path]} onCheckedChange={(e) => handleFileSelect(path, e.target.checked)} onFileClick={() => navigate({ to: './file', search: { p: path } })} onDelete={handleDelete} />;
           })}
         </Section>
-
-        {/* eslint-disable-next-line jsx-a11y/accessible-emoji */}
-        <div style={{ textAlign: 'center', marginBottom: 50 }}><a href="https://mifi.no" style={{ textDecoration: 'none', fontWeight: '400', color: 'black' }}>More apps by mifi.no ❤️</a></div>
       </div>
 
       <Outlet />

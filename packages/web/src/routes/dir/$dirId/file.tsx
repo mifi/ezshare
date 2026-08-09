@@ -2,8 +2,9 @@ import { createFileRoute, useNavigate, useRouter, useSearch } from '@tanstack/re
 import z from 'zod';
 import { useState, useEffect, useCallback, CSSProperties, useRef, KeyboardEventHandler, WheelEventHandler, MouseEventHandler, ReactEventHandler, useMemo } from 'react';
 import { FaList, FaTimes, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
+import axios from 'axios';
 
-import { getDownloadUrl, mightBeImage, mightBeVideo, useContext } from '../../../util';
+import { getDownloadUrl, mightBeImage, mightBeVideo, mightBeText, useContext } from '../../../util';
 import styles from './file.module.css';
 
 // eslint-disable-next-line import/prefer-default-export
@@ -19,7 +20,10 @@ const buttonStyle: CSSProperties = { all: 'unset', padding: '.1em .3em', cursor:
 
 function ViewingFile() {
   const { currentDir } = useContext();
-  const playableFiles = useMemo(() => currentDir.files.filter((f) => !f.isDir && (mightBeVideo(f) || mightBeImage(f))), [currentDir.files]);
+  
+  // 1. Updated playableFiles to include text files for Next/Prev navigation
+  const playableFiles = useMemo(() => currentDir.files.filter((f) => !f.isDir && (mightBeVideo(f) || mightBeImage(f) || mightBeText(f))), [currentDir.files]);
+  
   const { p: path } = useSearch({ from: Route.fullPath });
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -34,6 +38,14 @@ function ViewingFile() {
   const [progress, setProgress] = useState(0);
   const [canPlayVideo, setCanPlayVideo] = useState(false);
   const [videoError, setVideoError] = useState<MediaError | null>(null);
+
+  // 2. Added specific states for Text files
+  const [textData, setTextData] = useState<string | null>(null);
+  const [isLoadingText, setIsLoadingText] = useState(false);
+
+  const isVideo = useMemo(() => viewingFile != null && mightBeVideo(viewingFile), [viewingFile]);
+  const isImage = useMemo(() => viewingFile != null && mightBeImage(viewingFile), [viewingFile]);
+  const isText = useMemo(() => viewingFile != null && mightBeText(viewingFile), [viewingFile]);
 
   const setRelViewingFile = useCallback((rel: number) => {
     const navigatePath = (f: { path: string } | undefined) => {
@@ -58,9 +70,7 @@ function ViewingFile() {
 
   const mediaRef = useRef<HTMLVideoElement & HTMLImageElement>(null);
 
-  const isVideo = useMemo(() => viewingFile != null && mightBeVideo(viewingFile), [viewingFile]);
-  const isImage = useMemo(() => viewingFile != null && mightBeImage(viewingFile), [viewingFile]);
-
+  // UseEffect for Image/Video playback logic
   useEffect(() => {
     if (mediaRef.current) {
       mediaRef.current.focus({ preventScroll: true });
@@ -73,10 +83,8 @@ function ViewingFile() {
     if (isImage && playlistMode) {
       const slideTime = 5000;
       const startTime = Date.now();
-
       let t: number | undefined;
 
-      // ken burns zoom
       const animation = mediaRef.current?.animate([
         { transform: 'scale(1)', offset: 0 },
         { transform: 'scale(1.05)', offset: 1 },
@@ -88,7 +96,6 @@ function ViewingFile() {
       const tick = () => {
         t = setTimeout(() => {
           const now = Date.now();
-
           const p = Math.max(0, Math.min(1, (now - startTime) / slideTime));
           setProgress(p);
 
@@ -111,22 +118,39 @@ function ViewingFile() {
     return undefined;
   }, [handleNext, isImage, playlistMode, viewingFile]);
 
+  // 3. New UseEffect specifically for fetching Text files
+  useEffect(() => {
+    if (isText && viewingFile) {
+      setIsLoadingText(true);
+      setTextData("Loading file content...");
+      
+      axios.get(getDownloadUrl(viewingFile.path), { responseType: 'text' })
+        .then((response) => {
+          let content = response.data;
+          if (typeof content !== 'string') {
+            content = JSON.stringify(content, null, 2);
+          }
+          setTextData(content || '(File is empty)');
+        })
+        .catch((err) => {
+          console.error("Failed to load text file", err);
+          setTextData(`Error loading file content: ${err.message}`);
+        })
+        .finally(() => {
+          setIsLoadingText(false);
+        });
+    }
+  }, [isText, viewingFile]);
+
   const handleKeyDown = useCallback<KeyboardEventHandler<HTMLElement>>((e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
-    // eslint-disable-next-line unicorn/prefer-switch
     if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      e.stopPropagation();
-      handlePrev();
+      e.preventDefault(); e.stopPropagation(); handlePrev();
     } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      e.stopPropagation();
-      handleNext();
+      e.preventDefault(); e.stopPropagation(); handleNext();
     } else if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      handleClose();
+      e.preventDefault(); e.stopPropagation(); handleClose();
     }
   }, [handleClose, handleNext, handlePrev]);
 
@@ -136,23 +160,19 @@ function ViewingFile() {
 
   const handlePointerUp = useCallback<React.PointerEventHandler<HTMLElement>>((e) => {
     if (pointerStartX.current == null) return;
-
     const diff = pointerStartX.current - e.clientX;
     if (Math.abs(diff) > 50) {
       if (diff > 0) handleNext();
       else handlePrev();
     }
-
     pointerStartX.current = undefined;
   }, [handleNext, handlePrev]);
 
   const handleWheel = useCallback<WheelEventHandler<HTMLElement>>((e) => {
-    // Trackpad horizontal swipes come as wheel events
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-      if (Date.now() - lastWheel.current < 500) return; // ignore if too fast
+      if (Date.now() - lastWheel.current < 500) return;
       lastWheel.current = Date.now();
       e.preventDefault();
-
       if (e.deltaX > 0) handleNext();
       else handlePrev();
     }
@@ -161,56 +181,40 @@ function ViewingFile() {
   const handleClick = useCallback<MouseEventHandler<HTMLElement>>((e) => {
     e.stopPropagation();
     if (mediaRef.current != null && 'play' in mediaRef.current) {
-      if (mediaRef.current.paused) {
-        mediaRef.current.play();
-      } else {
-        mediaRef.current.pause();
-      }
+      if (mediaRef.current.paused) mediaRef.current.play();
+      else mediaRef.current.pause();
     }
   }, []);
 
   const handlePrevClick = useCallback<MouseEventHandler<HTMLElement>>((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handlePrev();
+    e.preventDefault(); e.stopPropagation(); handlePrev();
   }, [handlePrev]);
 
   const handleNextClick = useCallback<MouseEventHandler<HTMLElement>>((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleNext();
+    e.preventDefault(); e.stopPropagation(); handleNext();
   }, [handleNext]);
 
   const handlePlaylistModeClick = useCallback<MouseEventHandler<HTMLElement>>((e) => {
-    e.stopPropagation();
-    setPlaylistMode((v) => !v);
+    e.stopPropagation(); setPlaylistMode((v) => !v);
   }, []);
 
   const handleMuteClick = useCallback<MouseEventHandler<HTMLElement>>((e) => {
-    e.stopPropagation();
-    setMuted((v) => !v);
+    e.stopPropagation(); setMuted((v) => !v);
   }, []);
 
   const handleVideoEnded = useCallback<ReactEventHandler<HTMLVideoElement>>(() => {
-    if (playlistMode) {
-      handleNext();
-    }
+    if (playlistMode) handleNext();
   }, [handleNext, playlistMode]);
 
   const scrubbingRef = useRef(false);
   const handleScrubDown = useCallback<React.PointerEventHandler<HTMLElement>>((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    scrubbingRef.current = true;
+    e.preventDefault(); e.stopPropagation(); scrubbingRef.current = true;
   }, []);
   const handleScrubUp = useCallback<React.PointerEventHandler<HTMLElement>>((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    scrubbingRef.current = false;
+    e.preventDefault(); e.stopPropagation(); scrubbingRef.current = false;
   }, []);
   const handleScrub = useCallback<React.PointerEventHandler<HTMLDivElement>>((e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     if (!scrubbingRef.current) return;
     const target = e.target as HTMLDivElement;
     const p = e.clientX / target.clientWidth;
@@ -226,50 +230,26 @@ function ViewingFile() {
   }, []);
 
   const handleVideoError = useCallback<ReactEventHandler<HTMLVideoElement | HTMLImageElement>>((e) => {
-    if (e.target instanceof HTMLVideoElement) {
-      setVideoError(e.target.error);
-    }
-
+    if (e.target instanceof HTMLVideoElement) setVideoError(e.target.error);
     if (playlistMode) {
-      setTimeout(() => {
-        handleNext();
-      }, 300);
+      setTimeout(() => { handleNext(); }, 300);
     }
   }, [handleNext, playlistMode]);
 
   function renderPreview() {
-    if (viewingFile == null) {
-      return null;
-    }
+    if (viewingFile == null) return null;
 
     if (isVideo) {
       return (
         <>
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
-            src={getDownloadUrl(viewingFile.path)}
-            controls={showControls}
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            autoPlay
-            playsInline
-            loop={!playlistMode}
-            muted={muted}
-            onKeyDown={handleKeyDown}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onWheel={handleWheel}
-            onClick={handleClick}
-            onEnded={handleVideoEnded}
-            onTimeUpdate={handleVideoTimeUpdate}
-            tabIndex={0}
-            ref={mediaRef}
-            onError={handleVideoError}
-            onCanPlay={() => setCanPlayVideo(true)}
+            src={getDownloadUrl(viewingFile.path)} controls={showControls} style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            autoPlay playsInline loop={!playlistMode} muted={muted} tabIndex={0} ref={mediaRef}
+            onKeyDown={handleKeyDown} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onWheel={handleWheel} onClick={handleClick} onEnded={handleVideoEnded} onTimeUpdate={handleVideoTimeUpdate} onError={handleVideoError} onCanPlay={() => setCanPlayVideo(true)}
           />
           {!canPlayVideo && videoError && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff7676', fontSize: '1.5em' }}>
-              Unable to play video
-            </div>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff7676', fontSize: '1.5em' }}>Unable to play video</div>
           )}
         </>
       );
@@ -279,18 +259,37 @@ function ViewingFile() {
       return (
         // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <img
-          src={getDownloadUrl(viewingFile.path)}
-          alt={`Preview: ${viewingFile.fileName}`}
-          style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }}
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-          tabIndex={0}
-          onKeyDown={handleKeyDown}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onWheel={handleWheel}
-          onClick={handleClick}
-          ref={mediaRef}
+          src={getDownloadUrl(viewingFile.path)} alt={`Preview: ${viewingFile.fileName}`} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }}
+          tabIndex={0} ref={mediaRef}
+          onKeyDown={handleKeyDown} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onWheel={handleWheel} onClick={handleClick}
         />
+      );
+    }
+
+    // 4. Render the Text Viewer with explicit zIndex and pointer stopping
+    if (isText) {
+      return (
+        <div 
+          style={{ 
+            position: 'absolute',
+            inset: 0,
+            padding: '60px 20px 20px', // Creates space so the text isn't hidden behind the top header
+            boxSizing: 'border-box',
+            overflowY: 'auto', 
+            backgroundColor: '#1e1e1e', // Dark terminal background
+            color: '#d4d4d4',           // Light text
+            textAlign: 'left',
+            zIndex: 6,                   // Sets text above dialog background but below the header
+            userSelect: 'text',
+            WebkitUserSelect: 'text'
+          }}
+          onWheel={e => e.stopPropagation()} // Let user scroll long files natively
+          onPointerDown={e => e.stopPropagation()} // Stop text selection from triggering swipe navigation
+        >
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace', fontSize: '14px', margin: 0, userSelect: 'text', WebkitUserSelect: 'text' }}>
+            {textData}
+          </pre>
+        </div>
       );
     }
 
@@ -305,19 +304,14 @@ function ViewingFile() {
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <dialog
       className={styles['dialog']}
-      ref={dialogRef}
-      onClose={handleClose}
-      open
+      ref={dialogRef} onClose={handleClose} open
       style={{ margin: 0, padding: 0, position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, width: '100dvw', height: '100dvh', background: 'black', color: 'white', overflow: 'hidden' }}
-      onKeyDown={handleKeyDown}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onWheel={handleWheel}
-      onClick={handleClick}
+      onKeyDown={handleKeyDown} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onWheel={handleWheel} onClick={handleClick}
     >
       {renderPreview()}
 
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' }}>
+      {/* Added zIndex: 10 here to ensure the close button header is always on top! */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 10 }}>
         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', flexShrink: 1, flexGrow: 1, textAlign: 'center' }}>{viewingFile?.fileName}</div>
 
         {isVideo && (
@@ -337,10 +331,10 @@ function ViewingFile() {
         </form>
       </div>
 
-      <button type="button" style={{ all: 'unset', position: 'absolute', bottom: 0, left: 0, width: '15%', height: '80%' }} onClick={handlePrevClick} tabIndex={-1} />
-      <button type="button" style={{ all: 'unset', position: 'absolute', bottom: 0, right: 0, width: '15%', height: '80%' }} onClick={handleNextClick} tabIndex={-1} />
+      <button type="button" style={{ all: 'unset', position: 'absolute', bottom: 0, left: 0, width: '15%', height: '80%', zIndex: 5 }} onClick={handlePrevClick} tabIndex={-1} />
+      <button type="button" style={{ all: 'unset', position: 'absolute', bottom: 0, right: 0, width: '15%', height: '80%', zIndex: 5 }} onClick={handleNextClick} tabIndex={-1} />
 
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '15%' }} onPointerDown={handleScrubDown} onPointerUp={handleScrubUp} onPointerMove={handleScrub}>
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '15%', zIndex: 5 }} onPointerDown={handleScrubDown} onPointerUp={handleScrubUp} onPointerMove={handleScrub}>
         <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '.5dvw', width: `${(progress * 100).toFixed(2)}%`, backgroundColor: 'red' }} />
       </div>
     </dialog>

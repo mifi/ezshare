@@ -4,6 +4,8 @@ import assert from 'node:assert';
 import { dirname } from 'node:path';
 import qrcode from 'qrcode-terminal';
 import { fileURLToPath } from 'node:url';
+//import fs from 'fs';
+//import path from 'path';
 
 import App, { parseArgs } from '@ezshare/lib';
 

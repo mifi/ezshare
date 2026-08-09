@@ -121,6 +121,28 @@ export default ({ sharedPath: sharedPathIn, port, maxUploadSize, zipCompressionL
     });
   }));
 
+app.delete('/api/delete', asyncHandler(async (req, res) => {
+    const { path: filePath } = req.query;
+    
+    // Ensure path is provided and is a string
+    assert(typeof filePath === 'string', 'Path must be a string');
+
+    // Use existing helper to resolve path and check security (prevents directory traversal)
+    const absPath = await getFileAbsPath(filePath);
+
+    // prevent deleting the root shared folder
+    if (absPath === sharedPath) {
+      res.status(403).json({ error: 'Cannot delete root directory' });
+      return;
+    }
+
+    console.log('Deleting file:', absPath);
+    await fs.unlink(absPath);
+    
+    res.json({ success: true });
+  }));
+
+
   // NOTE: Must support non latin characters
   app.post('/api/paste', bodyParser.urlencoded({ extended: false }), asyncHandler(async (req, res) => {
     // eslint-disable-next-line unicorn/prefer-ternary
